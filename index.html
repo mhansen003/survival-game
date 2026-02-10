@@ -1037,6 +1037,7 @@ let creatures = [];
 let groundItems = [];
 let particles = [];
 let damageNumbers = [];
+let pickupToasts = [];
 let showInventory = false;
 let showMinimap = true;
 
@@ -1714,6 +1715,13 @@ function update(dt) {
     }
     damageNumbers = damageNumbers.filter(dn => dn.timer > 0);
 
+    // Pickup toasts
+    for (const pt of pickupToasts) {
+        pt.y -= 20 * dt;
+        pt.timer -= dt;
+    }
+    pickupToasts = pickupToasts.filter(pt => pt.timer > 0);
+
     // Update mouse world position
     updateMouseWorld();
 }
@@ -1859,6 +1867,22 @@ function pickupItem(item) {
             color: '#f1c40f', size: randFloat(2, 4),
         });
     }
+
+    // Pickup toast tooltip
+    let toastLine = `${item.emoji || '📦'} ${item.name}`;
+    const effects = [];
+    if (item.heal) effects.push(`+${item.heal} HP`);
+    if (item.hunger) effects.push(`+${item.hunger} Hunger`);
+    if (item.thirst) effects.push(`+${item.thirst} Thirst`);
+    if (item.isWeapon) effects.push(`+${item.atk} ATK${item.isGun ? ' RANGED' : ''}`);
+    if (effects.length) toastLine += `  (${effects.join(', ')})`;
+    pickupToasts.push({
+        x: item.x, y: item.y - 16,
+        text: toastLine,
+        timer: 2.0,
+        maxTimer: 2.0,
+        isWeapon: !!item.isWeapon,
+    });
 }
 
 function useInventoryItem(idx) {
@@ -2057,6 +2081,42 @@ function render() {
         ctx.fillStyle = dn.color;
         ctx.textAlign = 'center';
         ctx.fillText(dn.text, dn.x, dn.y);
+    }
+    ctx.globalAlpha = 1;
+
+    // Draw pickup toasts
+    for (const pt of pickupToasts) {
+        const progress = 1 - pt.timer / pt.maxTimer;
+        const alpha = progress < 0.2 ? progress / 0.2 : pt.timer < 0.5 ? pt.timer / 0.5 : 1;
+        ctx.globalAlpha = alpha;
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        const tw = ctx.measureText(pt.text).width;
+        const px = tw / 2 + 8;
+        const py = 10;
+        ctx.fillStyle = pt.isWeapon ? 'rgba(120,80,20,0.85)' : 'rgba(20,20,20,0.8)';
+        const rx = pt.x - px;
+        const ry = pt.y - py;
+        const rw = tw + 16;
+        const rh = 22;
+        const cr = 6;
+        ctx.beginPath();
+        ctx.moveTo(rx + cr, ry);
+        ctx.lineTo(rx + rw - cr, ry);
+        ctx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + cr);
+        ctx.lineTo(rx + rw, ry + rh - cr);
+        ctx.quadraticCurveTo(rx + rw, ry + rh, rx + rw - cr, ry + rh);
+        ctx.lineTo(rx + cr, ry + rh);
+        ctx.quadraticCurveTo(rx, ry + rh, rx, ry + rh - cr);
+        ctx.lineTo(rx, ry + cr);
+        ctx.quadraticCurveTo(rx, ry, rx + cr, ry);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = pt.isWeapon ? '#f1c40f' : '#4ae04a';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = pt.isWeapon ? '#ffd700' : '#e0ffe0';
+        ctx.fillText(pt.text, pt.x, pt.y + 4);
     }
     ctx.globalAlpha = 1;
 
@@ -2654,6 +2714,7 @@ function restartGame() {
 
     particles = [];
     damageNumbers = [];
+    pickupToasts = [];
     exploredCount = 0;
     cachedExplorePercent = '0.0';
     gamePaused = false;
