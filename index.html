@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fog of War — Survival Strategy</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #gameCanvas { display: block; position: absolute; top: 0; left: 0; cursor: crosshair; }
+
+        /* ─── Title Screen ─── */
+        #titleScreen {
+            position: fixed; inset: 0; z-index: 100;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a15 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 1s ease;
+        }
+        #titleScreen.hidden { opacity: 0; pointer-events: none; }
+        #titleScreen h1 {
+            font-size: 64px; color: #e0d5a0;
+            text-shadow: 0 0 40px rgba(224,213,160,0.5), 0 0 80px rgba(224,213,160,0.2);
+            letter-spacing: 8px; margin-bottom: 10px;
+            animation: pulse 3s ease-in-out infinite;
+        }
+        #titleScreen .subtitle { font-size: 18px; color: #8a8a6a; letter-spacing: 4px; margin-bottom: 50px; }
+        #titleScreen .start-btn {
+            padding: 16px 48px; font-size: 20px; letter-spacing: 3px;
+            background: transparent; border: 2px solid #e0d5a0; color: #e0d5a0;
+            cursor: pointer; transition: all 0.3s;
+        }
+        #titleScreen .start-btn:hover { background: #e0d5a0; color: #0a0a15; }
+        #titleScreen .controls {
+            margin-top: 40px; color: #5a5a4a; font-size: 13px; text-align: center; line-height: 2;
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* ─── HUD ─── */
+        #hud {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 90px; z-index: 50;
+            background: linear-gradient(to top, rgba(10,10,20,0.95), rgba(10,10,20,0.8));
+            border-top: 2px solid rgba(224,213,160,0.3);
+            display: flex; align-items: center; padding: 8px 20px; gap: 20px;
+            opacity: 0; transition: opacity 0.5s;
+        }
+        #hud.visible { opacity: 1; }
+
+        .stat-group { display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+        .stat-bar-container {
+            display: flex; align-items: center; gap: 8px; height: 18px;
+        }
+        .stat-icon { font-size: 14px; width: 20px; text-align: center; }
+        .stat-label { font-size: 10px; color: #8a8a6a; width: 50px; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-bar-bg {
+            flex: 1; height: 12px; background: rgba(255,255,255,0.1);
+            border-radius: 6px; overflow: hidden; position: relative;
+        }
+        .stat-bar-fill {
+            height: 100%; border-radius: 6px; transition: width 0.3s ease;
+            position: relative;
+        }
+        .stat-bar-fill::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent);
+            border-radius: 6px;
+        }
+        .stat-value {
+            font-size: 10px; color: #ccc; width: 30px; text-align: right;
+        }
+        .health-fill { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+        .hunger-fill { background: linear-gradient(90deg, #d35400, #e67e22); }
+        .thirst-fill { background: linear-gradient(90deg, #2471a3, #3498db); }
+        .warmth-fill { background: linear-gradient(90deg, #b7950b, #f1c40f); }
+        .stamina-fill { background: linear-gradient(90deg, #1e8449, #2ecc71); }
+
+        /* ─── Biome Indicator ─── */
+        #biomeIndicator {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 50;
+            padding: 8px 24px; border-radius: 20px;
+            background: rgba(10,10,20,0.8); border: 1px solid rgba(224,213,160,0.3);
+            color: #e0d5a0; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;
+            opacity: 0; transition: opacity 0.5s;
+        }
+        #biomeIndicator.visible { opacity: 1; }
+
+        /* ─── Inventory ─── */
+        #inventoryPanel {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 60; width: 440px; max-height: 500px;
+            background: rgba(15,15,30,0.95); border: 2px solid rgba(224,213,160,0.4);
+            border-radius: 12px; padding: 20px;
+            display: none;
+        }
+        #inventoryPanel.open { display: block; }
+        #inventoryPanel h2 {
+            color: #e0d5a0; font-size: 18px; letter-spacing: 3px;
+            text-align: center; margin-bottom: 16px; text-transform: uppercase;
+        }
+        .inv-grid {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
+        }
+        .inv-slot {
+            aspect-ratio: 1; background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 24px; position: relative; cursor: default;
+            transition: border-color 0.2s;
+        }
+        .inv-slot:hover { border-color: rgba(224,213,160,0.5); }
+        .inv-slot .qty {
+            position: absolute; bottom: 2px; right: 4px;
+            font-size: 10px; color: #ccc; font-weight: bold;
+        }
+        .inv-slot .item-name {
+            font-size: 8px; color: #8a8a6a; margin-top: 2px;
+            text-align: center; line-height: 1.1;
+        }
+
+        /* ─── Minimap ─── */
+        #minimapContainer {
+            position: fixed; top: 20px; right: 20px; z-index: 50;
+            border: 2px solid rgba(224,213,160,0.4); border-radius: 8px;
+            overflow: hidden; opacity: 0; transition: opacity 0.5s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        #minimapContainer.visible { opacity: 1; }
+        #minimapCanvas { display: block; }
+
+        /* ─── Explore Percentage ─── */
+        #exploreInfo {
+            position: fixed; top: 20px; left: 20px; z-index: 50;
+            color: #e0d5a0; font-size: 12px; letter-spacing: 1px;
+            opacity: 0; transition: opacity 0.5s;
+        }
+        #exploreInfo.visible { opacity: 1; }
+
+        /* ─── Inventory Button in HUD ─── */
+        .hud-right {
+            margin-left: auto; display: flex; align-items: center; gap: 12px;
+        }
+        .hud-btn {
+            padding: 6px 14px; font-size: 11px; letter-spacing: 2px;
+            background: rgba(224,213,160,0.1); border: 1px solid rgba(224,213,160,0.3);
+            color: #e0d5a0; border-radius: 4px; cursor: pointer;
+            text-transform: uppercase; transition: all 0.2s;
+        }
+        .hud-btn:hover { background: rgba(224,213,160,0.2); }
+
+        /* ─── Combat Log ─── */
+        #combatLog {
+            position: fixed; bottom: 100px; left: 20px; z-index: 50;
+            width: 300px; max-height: 150px; overflow-y: auto;
+            display: flex; flex-direction: column-reverse; gap: 2px;
+            pointer-events: none;
+        }
+        .log-msg {
+            padding: 4px 10px; border-radius: 4px; font-size: 12px;
+            background: rgba(10,10,20,0.8); color: #aaa;
+            animation: fadeLog 5s forwards;
+        }
+        .log-msg.damage { color: #e74c3c; }
+        .log-msg.heal { color: #2ecc71; }
+        .log-msg.item { color: #f1c40f; }
+        .log-msg.info { color: #3498db; }
+        .log-msg.boss { color: #e040fb; font-weight: bold; }
+        @keyframes fadeLog { 0%,70% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* ─── Tooltip ─── */
+        #tooltip {
+            position: fixed; z-index: 70; padding: 8px 12px;
+            background: rgba(10,10,20,0.95); border: 1px solid rgba(224,213,160,0.4);
+            border-radius: 6px; color: #ccc; font-size: 12px;
+            pointer-events: none; display: none; max-width: 200px;
+        }
+        #tooltip .tt-name { color: #e0d5a0; font-weight: bold; margin-bottom: 4px; }
+        #tooltip .tt-desc { color: #8a8a6a; font-size: 11px; }
+
+        /* ─── Death Screen ─── */
+        #deathScreen {
+            position: fixed; inset: 0; z-index: 90;
+            background: rgba(80,0,0,0.85);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #deathScreen.show { display: flex; }
+        #deathScreen h1 { font-size: 72px; color: #e74c3c; letter-spacing: 8px; margin-bottom: 20px; }
+        #deathScreen p { color: #ccc; font-size: 16px; margin-bottom: 30px; }
+        #deathScreen button {
+            padding: 14px 40px; font-size: 18px; background: transparent;
+            border: 2px solid #e74c3c; color: #e74c3c; cursor: pointer;
+            letter-spacing: 2px; transition: all 0.3s;
+        }
+        #deathScreen button:hover { background: #e74c3c; color: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Title Screen -->
+    <div id="titleScreen">
+        <h1>FOG OF WAR</h1>
+        <div class="subtitle">SURVIVAL STRATEGY</div>
+        <button class="start-btn" onclick="startGame()">BEGIN EXPEDITION</button>
+        <div class="controls">
+            WASD / Arrow Keys — Move &nbsp;|&nbsp; Mouse Wheel — Zoom<br>
+            I — Inventory &nbsp;|&nbsp; M — Minimap &nbsp;|&nbsp; Click — Attack<br>
+            E — Interact &nbsp;|&nbsp; Space — Dash
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div class="stat-group">
+            <div class="stat-bar-container">
+                <span class="stat-icon">❤️</span>
+                <span class="stat-label">Health</span>
+                <div class="stat-bar-bg"><div class="stat-bar-fill health-fill" id="healthBar"></div></div>
+                <span class="stat-value" id="healthVal">100</span>
+            </div>
+            <div class="stat-bar-container">
+                <span class="stat-icon">🍖</span>
+                <span class="stat-label">Hunger</span>
+                <div class="stat-bar-bg"><div class="stat-bar-fill hunger-fill" id="hungerBar"></div></div>
+                <span class="stat-value" id="hungerVal">100</span>
+            </div>
+        </div>
+        <div class="stat-group">
+            <div class="stat-bar-container">
+                <span class="stat-icon">💧</span>
+                <span class="stat-label">Thirst</span>
+                <div class="stat-bar-bg"><div class="stat-bar-fill thirst-fill" id="thirstBar"></div></div>
+                <span class="stat-value" id="thirstVal">100</span>
+            </div>
+            <div class="stat-bar-container">
+                <span class="stat-icon">🔥</span>
+                <span class="stat-label">Warmth</span>
+                <div class="stat-bar-bg"><div class="stat-bar-fill warmth-fill" id="warmthBar"></div></div>
+                <span class="stat-value" id="warmthVal">100</span>
+            </div>
+        </div>
+        <div class="stat-group">
+            <div class="stat-bar-container">
+                <span class="stat-icon">⚡</span>
+                <span class="stat-label">Stamina</span>
+                <div class="stat-bar-bg"><div class="stat-bar-fill stamina-fill" id="staminaBar"></div></div>
+                <span class="stat-value" id="staminaVal">100</span>
+            </div>
+            <div class="stat-bar-container">
+                <span class="stat-icon">⚔️</span>
+                <span class="stat-label">ATK</span>
+                <div class="stat-bar-bg" style="background:none;"><span id="atkVal" style="color:#e0d5a0;font-size:12px;">5</span></div>
+                <span class="stat-value"></span>
+            </div>
+        </div>
+        <div class="hud-right">
+            <button class="hud-btn" onclick="toggleInventory()">📦 Inventory [I]</button>
+            <button class="hud-btn" onclick="toggleMinimap()">🗺️ Map [M]</button>
+        </div>
+    </div>
+
+    <!-- Biome Indicator -->
+    <div id="biomeIndicator"></div>
+
+    <!-- Explore Info -->
+    <div id="exploreInfo">
+        <div>🗺️ Explored: <span id="explorePercent">0</span>%</div>
+        <div>🏆 Bosses: <span id="bossCount">0</span>/8</div>
+        <div>⏱️ <span id="dayCounter">Day 1</span></div>
+    </div>
+
+    <!-- Minimap -->
+    <div id="minimapContainer">
+        <canvas id="minimapCanvas" width="200" height="134"></canvas>
+    </div>
+
+    <!-- Inventory Panel -->
+    <div id="inventoryPanel">
+        <h2>📦 Inventory</h2>
+        <div class="inv-grid" id="invGrid"></div>
+    </div>
+
+    <!-- Combat Log -->
+    <div id="combatLog"></div>
+
+    <!-- Tooltip -->
+    <div id="tooltip">
+        <div class="tt-name"></div>
+        <div class="tt-desc"></div>
+    </div>
+
+    <!-- Death Screen -->
+    <div id="deathScreen">
+        <h1>YOU DIED</h1>
+        <p id="deathCause">The wilderness claimed another soul...</p>
+        <button onclick="restartGame()">TRY AGAIN</button>
+    </div>
+
+<script>
+// ============================================================
+// CONFIGURATION & CONSTANTS
+// ============================================================
+const TILE = 32;
+const MAP_W = 120;
+const MAP_H = 80;
+const VISION_RADIUS = 8;
+const PLAYER_SPEED = 120; // pixels per second
+const DASH_SPEED = 300;
+const DASH_DURATION = 0.2;
+const DASH_COOLDOWN = 1.5;
+
+const BIOMES = {
+    OCEAN:     0,
+    PLAINS:    1,
+    FOREST:    2,
+    SNOW:      3,
+    MOUNTAINS: 4,
+    VOLCANO:   5,
+    DESERT:    6,
+    SWAMP:     7,
+    RIVER:     8
+};
+const BIOME_NAMES = ['Ocean','Plains','Forest','Snow','Mountains','Volcano','Desert','Swamp','River'];
+
+const BIOME_COLORS = {
+    0: { base: [26,82,118],   alt: [22,72,102],  accent: [46,134,193] },  // Ocean
+    1: { base: [120,210,140], alt: [110,200,130], accent: [200,230,130] }, // Plains
+    2: { base: [30,120,60],   alt: [25,100,50],   accent: [20,80,40] },   // Forest
+    3: { base: [225,235,245], alt: [210,225,240], accent: [174,214,241] }, // Snow
+    4: { base: [128,139,150], alt: [112,123,124], accent: [86,101,115] }, // Mountains
+    5: { base: [80,25,18],    alt: [100,30,20],   accent: [200,60,40] },  // Volcano
+    6: { base: [240,220,140], alt: [230,200,100], accent: [210,160,80] }, // Desert
+    7: { base: [65,90,55],    alt: [55,80,48],    accent: [95,120,50] },  // Swamp
+    8: { base: [52,152,219],  alt: [46,134,193],  accent: [133,193,233] } // River
+};
+
+const BIOME_WALKABLE = {
+    0: false, 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true, 8: true
+};
+const BIOME_SPEED_MOD = {
+    0: 0, 1: 1.0, 2: 0.85, 3: 0.75, 4: 0.6, 5: 0.7, 6: 0.8, 7: 0.65, 8: 0.5
+};
+
+// Creature definitions per biome
+const CREATURE_DEFS = {
+    1: [{ name:'Sheep',     emoji:'🐑', hp:20,  dmg:2,  speed:30,  xp:5,  drops:['Wool','Mutton'] }],
+    2: [{ name:'Wolf',      emoji:'🐺', hp:40,  dmg:8,  speed:60,  xp:15, drops:['Fur','Meat'] },
+        { name:'Bear',      emoji:'🐻', hp:80,  dmg:15, speed:40,  xp:30, drops:['Fur','Meat','Honey'] }],
+    3: [{ name:'Arctic Fox', emoji:'🦊', hp:30, dmg:5,  speed:55,  xp:10, drops:['Fur','Meat'] }],
+    4: [{ name:'Goat',      emoji:'🐐', hp:35,  dmg:6,  speed:45,  xp:10, drops:['Meat','Leather'] }],
+    5: [{ name:'Scorpion',  emoji:'🦂', hp:25,  dmg:12, speed:50,  xp:15, drops:['Venom','Chitin'] }],
+    6: [{ name:'Snake',     emoji:'🐍', hp:20,  dmg:10, speed:55,  xp:10, drops:['Venom','Scales'] },
+        { name:'Lizard',    emoji:'🦎', hp:30,  dmg:8,  speed:45,  xp:12, drops:['Scales','Meat'] }],
+    7: [{ name:'Frog',      emoji:'🐸', hp:15,  dmg:3,  speed:35,  xp:5,  drops:['Slime'] },
+        { name:'Crocodile', emoji:'🐊', hp:60,  dmg:18, speed:35,  xp:25, drops:['Leather','Meat','Scales'] }],
+    8: []
+};
+
+const BOSS_DEFS = {
+    1: { name:'Thundersheep',   emoji:'🐑', hp:200, dmg:20, speed:50,  xp:100, drops:['Golden Wool','Thunder Horn','Meat'], color:'#f1c40f' },
+    2: { name:'Ancient Treant',  emoji:'🌳', hp:350, dmg:25, speed:25,  xp:150, drops:['Ancient Wood','Heart of Forest','Amber'], color:'#2ecc71' },
+    3: { name:'Frost Mammoth',   emoji:'🦣', hp:500, dmg:35, speed:30,  xp:200, drops:['Mammoth Tusk','Frost Core','Thick Fur'], color:'#85c1e9' },
+    4: { name:'Stone Titan',     emoji:'🗿', hp:400, dmg:30, speed:20,  xp:180, drops:['Titan Ore','Crystal Heart','Gemstone'], color:'#808b96' },
+    5: { name:'Magma Wyrm',      emoji:'🐉', hp:600, dmg:40, speed:35,  xp:250, drops:['Obsidian Fang','Lava Core','Dragon Scale'], color:'#e74c3c' },
+    6: { name:'Sand Gila',       emoji:'🦎', hp:300, dmg:25, speed:45,  xp:160, drops:['Desert Crown','Sun Stone','Scales'], color:'#f39c12' },
+    7: { name:'Swamp Hydra',     emoji:'🐍', hp:450, dmg:30, speed:30,  xp:200, drops:['Hydra Fang','Swamp Crystal','Venom Sac'], color:'#27ae60' },
+    0: { name:'Leviathan',       emoji:'🐋', hp:700, dmg:45, speed:40,  xp:300, drops:['Leviathan Scale','Ocean Pearl','Trident Shard'], color:'#2e86c1' },
+};
+
+// Items that spawn on the ground
+const GROUND_ITEMS = {
+    1: [{ name:'Berries',   emoji:'🫐', heal:5 }, { name:'Wheat',     emoji:'🌾', hunger:15 }],
+    2: [{ name:'Mushroom',  emoji:'🍄', heal:10 },{ name:'Wood',      emoji:'🪵' }, { name:'Herbs', emoji:'🌿', heal:15 }],
+    3: [{ name:'Ice Crystal',emoji:'💎' },         { name:'Snowberry', emoji:'🫐', heal:8 }],
+    4: [{ name:'Stone',     emoji:'🪨' },          { name:'Iron Ore',  emoji:'⛏️' }, { name:'Gemstone', emoji:'💎' }],
+    5: [{ name:'Obsidian',  emoji:'🖤' },          { name:'Sulfur',    emoji:'💛' }],
+    6: [{ name:'Cactus Fruit',emoji:'🌵', thirst:10, heal:5 }, { name:'Sandstone', emoji:'🪨' }],
+    7: [{ name:'Reed',      emoji:'🌿' },          { name:'Slime',     emoji:'🟢' }],
+    8: [{ name:'Fresh Water',emoji:'💧', thirst:25 }]
+};
+
+const WEAPON_ITEMS = [
+    { name:'Wooden Sword', emoji:'🗡️', atk:10, desc:'A crude but effective blade' },
+    { name:'Stone Axe',    emoji:'🪓', atk:15, desc:'Chops foes and trees alike' },
+    { name:'Iron Blade',   emoji:'⚔️', atk:25, desc:'Forged from mountain ore' },
+    { name:'Frost Blade',  emoji:'🔮', atk:35, desc:'Infused with arctic chill' },
+    { name:'Dragon Slayer', emoji:'🗡️', atk:50, desc:'Legendary weapon of old' },
+];
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function dist(x1, y1, x2, y2) { return Math.sqrt((x1-x2)**2 + (y1-y2)**2); }
+function rng(seed) {
+    const s = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+    return s - Math.floor(s);
+}
+function noise2D(x, y) {
+    return rng(x * 374.764 + y * 668.265 + 0.5);
+}
+function smoothNoise(x, y) {
+    const ix = Math.floor(x), iy = Math.floor(y);
+    const fx = x - ix, fy = y - iy;
+    const sfx = fx * fx * (3 - 2 * fx), sfy = fy * fy * (3 - 2 * fy);
+    const n00 = noise2D(ix, iy), n10 = noise2D(ix+1, iy);
+    const n01 = noise2D(ix, iy+1), n11 = noise2D(ix+1, iy+1);
+    return lerp(lerp(n00, n10, sfx), lerp(n01, n11, sfx), sfy);
+}
+function fbm(x, y, octaves) {
+    let v = 0, amp = 0.5, freq = 1;
+    for (let i = 0; i < octaves; i++) {
+        v += amp * smoothNoise(x * freq, y * freq);
+        amp *= 0.5; freq *= 2;
+    }
+    return v;
+}
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function randFloat(min, max) { return Math.random() * (max - min) + min; }
+function rgbStr(r,g,b,a) {
+    if (a !== undefined) return `rgba(${r|0},${g|0},${b|0},${a})`;
+    return `rgb(${r|0},${g|0},${b|0})`;
+}
+
+// ============================================================
+// MAP GENERATION
+// ============================================================
+let mapTiles = [];
+let mapDecorations = [];
+let fogMap = [];
+
+// Biome regions (centers and approximate radii matching the hand-drawn map)
+const BIOME_SEEDS = [
+    { type: BIOMES.PLAINS,    cx: 22, cy: 18, weight: 1.0 },
+    { type: BIOMES.SNOW,      cx: 82, cy: 14, weight: 1.0 },
+    { type: BIOMES.SNOW,      cx: 100,cy: 10, weight: 0.8 },
+    { type: BIOMES.FOREST,    cx: 48, cy: 42, weight: 1.0 },
+    { type: BIOMES.FOREST,    cx: 40, cy: 35, weight: 0.7 },
+    { type: BIOMES.MOUNTAINS, cx: 98, cy: 38, weight: 1.0 },
+    { type: BIOMES.MOUNTAINS, cx: 88, cy: 32, weight: 0.7 },
+    { type: BIOMES.VOLCANO,   cx: 102,cy: 62, weight: 1.0 },
+    { type: BIOMES.DESERT,    cx: 68, cy: 64, weight: 1.0 },
+    { type: BIOMES.DESERT,    cx: 78, cy: 68, weight: 0.7 },
+    { type: BIOMES.SWAMP,     cx: 30, cy: 62, weight: 1.0 },
+    { type: BIOMES.SWAMP,     cx: 22, cy: 58, weight: 0.6 },
+    { type: BIOMES.OCEAN,     cx: 4,  cy: 50, weight: 1.2 },
+    { type: BIOMES.OCEAN,     cx: 2,  cy: 30, weight: 0.8 },
+    { type: BIOMES.OCEAN,     cx: 8,  cy: 70, weight: 0.6 },
+];
+
+// River path as a series of waypoints
+const RIVER_PATH = [
+    {x:75, y:3}, {x:72, y:10}, {x:65, y:18}, {x:58, y:25},
+    {x:52, y:32}, {x:48, y:38}, {x:45, y:44}, {x:42, y:50},
+    {x:38, y:55}, {x:34, y:60}, {x:28, y:65}, {x:20, y:72}, {x:14, y:76}
+];
+
+function distToRiver(tx, ty) {
+    let minD = Infinity;
+    for (let i = 0; i < RIVER_PATH.length - 1; i++) {
+        const ax = RIVER_PATH[i].x, ay = RIVER_PATH[i].y;
+        const bx = RIVER_PATH[i+1].x, by = RIVER_PATH[i+1].y;
+        const dx = bx - ax, dy = by - ay;
+        const len2 = dx*dx + dy*dy;
+        let t = len2 > 0 ? clamp(((tx-ax)*dx + (ty-ay)*dy) / len2, 0, 1) : 0;
+        const px = ax + t*dx, py = ay + t*dy;
+        const d = dist(tx, ty, px, py);
+        if (d < minD) minD = d;
+    }
+    return minD;
+}
+
+function generateMap() {
+    mapTiles = [];
+    mapDecorations = [];
+    fogMap = [];
+
+    for (let y = 0; y < MAP_H; y++) {
+        mapTiles[y] = [];
+        mapDecorations[y] = [];
+        fogMap[y] = [];
+        for (let x = 0; x < MAP_W; x++) {
+            fogMap[y][x] = 0; // hidden
+
+            // Check river first
+            const rd = distToRiver(x, y);
+            const riverNoise = fbm(x * 0.1, y * 0.1, 3) * 1.5;
+            if (rd < 1.5 + riverNoise * 0.8) {
+                mapTiles[y][x] = BIOMES.RIVER;
+                mapDecorations[y][x] = generateDecoration(BIOMES.RIVER, x, y);
+                continue;
+            }
+
+            // Ocean borders
+            if (x <= 1 || y <= 1 || x >= MAP_W - 2 || y >= MAP_H - 2) {
+                mapTiles[y][x] = BIOMES.OCEAN;
+                mapDecorations[y][x] = generateDecoration(BIOMES.OCEAN, x, y);
+                continue;
+            }
+
+            // Find nearest biome seed with noise
+            let bestBiome = BIOMES.PLAINS;
+            let bestDist = Infinity;
+            const nx = fbm(x * 0.05 + 100, y * 0.05, 4) * 12;
+            const ny = fbm(x * 0.05, y * 0.05 + 100, 4) * 12;
+
+            for (const seed of BIOME_SEEDS) {
+                const d = dist(x + nx, y + ny, seed.cx, seed.cy) / seed.weight;
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestBiome = seed.type;
+                }
+            }
+
+            // Make ocean coastline more natural
+            if (bestBiome === BIOMES.OCEAN) {
+                const coastNoise = fbm(x * 0.08, y * 0.08, 3);
+                if (x > 10 + coastNoise * 8) {
+                    // Too far inland for ocean, revert to nearest land biome
+                    let bestLand = BIOMES.PLAINS;
+                    let bestLandDist = Infinity;
+                    for (const seed of BIOME_SEEDS) {
+                        if (seed.type === BIOMES.OCEAN) continue;
+                        const d = dist(x + nx, y + ny, seed.cx, seed.cy) / seed.weight;
+                        if (d < bestLandDist) { bestLandDist = d; bestLand = seed.type; }
+                    }
+                    bestBiome = bestLand;
+                }
+            }
+
+            mapTiles[y][x] = bestBiome;
+            mapDecorations[y][x] = generateDecoration(bestBiome, x, y);
+        }
+    }
+
+    // Add shallow ocean tiles near coast
+    for (let y = 2; y < MAP_H - 2; y++) {
+        for (let x = 2; x < MAP_W - 2; x++) {
+            if (mapTiles[y][x] === BIOMES.OCEAN) {
+                let hasLand = false;
+                for (let dy = -2; dy <= 2; dy++) {
+                    for (let dx = -2; dx <= 2; dx++) {
+                        const ny2 = y+dy, nx2 = x+dx;
+                        if (ny2>=0 && ny2<MAP_H && nx2>=0 && nx2<MAP_W) {
+                            if (mapTiles[ny2][nx2] !== BIOMES.OCEAN && mapTiles[ny2][nx2] !== BIOMES.RIVER) {
+                                hasLand = true;
+                            }
+                        }
+                    }
+                }
+                if (hasLand) {
+                    // Mark as walkable shallow ocean
+                    mapDecorations[y][x].shallow = true;
+                }
+            }
+        }
+    }
+}
+
+function generateDecoration(biome, x, y) {
+    const r = noise2D(x * 7.31, y * 13.17);
+    const dec = { type: 'none', r: r, colorVar: (noise2D(x*3.7, y*5.1) - 0.5) * 20 };
+
+    switch(biome) {
+        case BIOMES.PLAINS:
+            if (r < 0.08) dec.type = 'flower';
+            else if (r < 0.15) dec.type = 'tall_grass';
+            else if (r < 0.18) dec.type = 'bush';
+            break;
+        case BIOMES.FOREST:
+            if (r < 0.25) dec.type = 'tree';
+            else if (r < 0.35) dec.type = 'bush';
+            else if (r < 0.38) dec.type = 'mushroom';
+            break;
+        case BIOMES.SNOW:
+            if (r < 0.06) dec.type = 'pine_snow';
+            else if (r < 0.1) dec.type = 'snowman';
+            else if (r < 0.15) dec.type = 'ice_crystal';
+            break;
+        case BIOMES.MOUNTAINS:
+            if (r < 0.2) dec.type = 'rock';
+            else if (r < 0.25) dec.type = 'boulder';
+            break;
+        case BIOMES.VOLCANO:
+            if (r < 0.1) dec.type = 'lava_crack';
+            else if (r < 0.18) dec.type = 'ash_vent';
+            else if (r < 0.22) dec.type = 'obsidian';
+            break;
+        case BIOMES.DESERT:
+            if (r < 0.06) dec.type = 'cactus';
+            else if (r < 0.12) dec.type = 'bones';
+            else if (r < 0.18) dec.type = 'dune';
+            break;
+        case BIOMES.SWAMP:
+            if (r < 0.15) dec.type = 'lily_pad';
+            else if (r < 0.22) dec.type = 'dead_tree';
+            else if (r < 0.28) dec.type = 'puddle';
+            break;
+        case BIOMES.RIVER:
+            if (r < 0.1) dec.type = 'ripple';
+            break;
+        case BIOMES.OCEAN:
+            if (r < 0.08) dec.type = 'wave';
+            break;
+    }
+    return dec;
+}
+
+// ============================================================
+// GAME STATE
+// ============================================================
+let gameStarted = false;
+let gamePaused = false;
+let gameTime = 0;
+let dayTime = 0;
+let dayCount = 1;
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const minimapCanvas = document.getElementById('minimapCanvas');
+const minimapCtx = minimapCanvas.getContext('2d');
+
+let camera = { x: 0, y: 0, zoom: 1.5, targetZoom: 1.5 };
+let keys = {};
+let mouse = { x: 0, y: 0, worldX: 0, worldY: 0, down: false };
+
+// Player state
+let player = {
+    x: 48 * TILE, y: 42 * TILE,
+    w: 20, h: 20,
+    health: 100, maxHealth: 100,
+    hunger: 100, maxHunger: 100,
+    thirst: 100, maxThirst: 100,
+    warmth: 100, maxWarmth: 100,
+    stamina: 100, maxStamina: 100,
+    atk: 5,
+    speed: PLAYER_SPEED,
+    facing: 0, // angle in radians
+    dashing: false,
+    dashTimer: 0,
+    dashCooldown: 0,
+    attackCooldown: 0,
+    invincibleTimer: 0,
+    inventory: [],
+    equippedWeapon: null,
+    bossesDefeated: 0,
+};
+
+let creatures = [];
+let groundItems = [];
+let particles = [];
+let damageNumbers = [];
+let showInventory = false;
+let showMinimap = true;
+
+// ============================================================
+// ENTITY SPAWNING
+// ============================================================
+function spawnCreatures() {
+    creatures = [];
+
+    // Spawn regular creatures per biome
+    for (let biome = 0; biome <= 8; biome++) {
+        const defs = CREATURE_DEFS[biome];
+        if (!defs || defs.length === 0) continue;
+
+        // Find tiles of this biome
+        const biomeTiles = [];
+        for (let y = 3; y < MAP_H - 3; y++) {
+            for (let x = 3; x < MAP_W - 3; x++) {
+                if (mapTiles[y][x] === biome) biomeTiles.push({x, y});
+            }
+        }
+
+        // Spawn creatures
+        const count = Math.min(Math.floor(biomeTiles.length / 25), 20);
+        for (let i = 0; i < count; i++) {
+            const tile = biomeTiles[randInt(0, biomeTiles.length - 1)];
+            const def = defs[randInt(0, defs.length - 1)];
+            creatures.push({
+                x: tile.x * TILE + randInt(4, TILE-4),
+                y: tile.y * TILE + randInt(4, TILE-4),
+                ...def,
+                maxHp: def.hp,
+                biome: biome,
+                ai: 'wander',
+                targetX: 0, targetY: 0,
+                moveTimer: 0,
+                attackTimer: 0,
+                isBoss: false,
+                flashTimer: 0,
+                dead: false,
+            });
+        }
+    }
+
+    // Spawn bosses (one per biome region)
+    const bossSpawns = [
+        { biome: 0, x: 6,  y: 50 },  // Ocean boss
+        { biome: 1, x: 22, y: 18 },  // Plains boss
+        { biome: 2, x: 50, y: 42 },  // Forest boss
+        { biome: 3, x: 85, y: 12 },  // Snow boss
+        { biome: 4, x: 98, y: 38 },  // Mountain boss
+        { biome: 5, x: 102,y: 62 },  // Volcano boss
+        { biome: 6, x: 70, y: 64 },  // Desert boss
+        { biome: 7, x: 30, y: 62 },  // Swamp boss
+    ];
+
+    for (const bs of bossSpawns) {
+        const def = BOSS_DEFS[bs.biome];
+        if (!def) continue;
+        creatures.push({
+            x: bs.x * TILE + TILE/2,
+            y: bs.y * TILE + TILE/2,
+            ...def,
+            maxHp: def.hp,
+            biome: bs.biome,
+            ai: 'wander',
+            targetX: 0, targetY: 0,
+            moveTimer: 0,
+            attackTimer: 0,
+            isBoss: true,
+            flashTimer: 0,
+            dead: false,
+            bossColor: def.color,
+        });
+    }
+}
+
+function spawnGroundItems() {
+    groundItems = [];
+
+    for (let biome = 0; biome <= 8; biome++) {
+        const items = GROUND_ITEMS[biome];
+        if (!items || items.length === 0) continue;
+
+        const biomeTiles = [];
+        for (let y = 3; y < MAP_H - 3; y++) {
+            for (let x = 3; x < MAP_W - 3; x++) {
+                if (mapTiles[y][x] === biome) biomeTiles.push({x, y});
+            }
+        }
+
+        const count = Math.min(Math.floor(biomeTiles.length / 15), 30);
+        for (let i = 0; i < count; i++) {
+            const tile = biomeTiles[randInt(0, biomeTiles.length - 1)];
+            const item = items[randInt(0, items.length - 1)];
+            groundItems.push({
+                x: tile.x * TILE + randInt(4, TILE-4),
+                y: tile.y * TILE + randInt(4, TILE-4),
+                ...item,
+                collected: false,
+            });
+        }
+    }
+
+    // Spawn a few weapons in specific locations
+    const weaponSpots = [
+        { x: 45 * TILE, y: 38 * TILE, idx: 0 }, // Wooden Sword in forest
+        { x: 90 * TILE, y: 35 * TILE, idx: 1 }, // Stone Axe in mountains
+        { x: 95 * TILE, y: 40 * TILE, idx: 2 }, // Iron Blade deep in mountains
+        { x: 80 * TILE, y: 10 * TILE, idx: 3 }, // Frost Blade in snow
+        { x: 105*TILE, y: 60 * TILE, idx: 4 }, // Dragon Slayer near volcano
+    ];
+    for (const ws of weaponSpots) {
+        const w = WEAPON_ITEMS[ws.idx];
+        groundItems.push({
+            x: ws.x, y: ws.y,
+            name: w.name, emoji: w.emoji,
+            isWeapon: true, atk: w.atk, desc: w.desc,
+            collected: false,
+        });
+    }
+}
+
+// ============================================================
+// FOG OF WAR
+// ============================================================
+function updateFog() {
+    const ptx = Math.floor(player.x / TILE);
+    const pty = Math.floor(player.y / TILE);
+    const r = VISION_RADIUS;
+
+    // First, dim all currently visible tiles to "explored"
+    for (let y = Math.max(0, pty - r - 2); y <= Math.min(MAP_H - 1, pty + r + 2); y++) {
+        for (let x = Math.max(0, ptx - r - 2); x <= Math.min(MAP_W - 1, ptx + r + 2); x++) {
+            if (fogMap[y][x] === 2) fogMap[y][x] = 1;
+        }
+    }
+
+    // Set tiles in vision radius to visible
+    for (let y = Math.max(0, pty - r); y <= Math.min(MAP_H - 1, pty + r); y++) {
+        for (let x = Math.max(0, ptx - r); x <= Math.min(MAP_W - 1, ptx + r); x++) {
+            const d = dist(ptx, pty, x, y);
+            if (d <= r) {
+                fogMap[y][x] = 2; // visible
+            }
+        }
+    }
+}
+
+function getExplorePercent() {
+    let explored = 0, total = MAP_W * MAP_H;
+    for (let y = 0; y < MAP_H; y++)
+        for (let x = 0; x < MAP_W; x++)
+            if (fogMap[y][x] > 0) explored++;
+    return ((explored / total) * 100).toFixed(1);
+}
+
+// ============================================================
+// INPUT HANDLING
+// ============================================================
+document.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.key.toLowerCase() === 'i') toggleInventory();
+    if (e.key.toLowerCase() === 'm') toggleMinimap();
+    if (e.key === ' ') { e.preventDefault(); tryDash(); }
+});
+document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+canvas.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+    updateMouseWorld();
+});
+canvas.addEventListener('mousedown', e => {
+    mouse.down = true;
+    if (gameStarted && !gamePaused) tryAttack();
+});
+canvas.addEventListener('mouseup', () => { mouse.down = false; });
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    camera.targetZoom = clamp(camera.targetZoom - e.deltaY * 0.001, 0.5, 3.0);
+}, { passive: false });
+
+// Prevent context menu
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function updateMouseWorld() {
+    const rect = canvas.getBoundingClientRect();
+    const screenX = mouse.x - rect.left;
+    const screenY = mouse.y - rect.top;
+    mouse.worldX = camera.x + (screenX - canvas.width/2) / camera.zoom;
+    mouse.worldY = camera.y + (screenY - canvas.height/2) / camera.zoom;
+}
+
+function toggleInventory() {
+    showInventory = !showInventory;
+    document.getElementById('inventoryPanel').classList.toggle('open', showInventory);
+    if (showInventory) renderInventory();
+}
+function toggleMinimap() {
+    showMinimap = !showMinimap;
+    document.getElementById('minimapContainer').classList.toggle('visible', showMinimap);
+}
+
+// ============================================================
+// PLAYER ACTIONS
+// ============================================================
+function tryDash() {
+    if (player.dashCooldown > 0 || player.stamina < 20) return;
+    player.dashing = true;
+    player.dashTimer = DASH_DURATION;
+    player.dashCooldown = DASH_COOLDOWN;
+    player.stamina -= 20;
+}
+
+function tryAttack() {
+    if (player.attackCooldown > 0) return;
+    player.attackCooldown = 0.4;
+
+    // Find nearest creature in range
+    const range = 50;
+    let nearest = null, nearestDist = range;
+    for (const c of creatures) {
+        if (c.dead) continue;
+        const d = dist(player.x, player.y, c.x, c.y);
+        if (d < nearestDist) { nearestDist = d; nearest = c; }
+    }
+
+    if (nearest) {
+        const dmg = player.atk + (player.equippedWeapon ? player.equippedWeapon.atk : 0);
+        const actualDmg = dmg + randInt(-2, 3);
+        nearest.hp -= actualDmg;
+        nearest.flashTimer = 0.15;
+
+        // Damage number
+        damageNumbers.push({
+            x: nearest.x, y: nearest.y - 10,
+            text: `-${actualDmg}`, color: '#e74c3c',
+            timer: 1.0
+        });
+
+        // Knockback
+        const angle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
+        nearest.x += Math.cos(angle) * 8;
+        nearest.y += Math.sin(angle) * 8;
+
+        // Particles
+        for (let i = 0; i < 5; i++) {
+            particles.push({
+                x: nearest.x, y: nearest.y,
+                vx: randFloat(-60, 60), vy: randFloat(-60, 60),
+                life: 0.5, maxLife: 0.5,
+                color: nearest.isBoss ? nearest.bossColor : '#e74c3c',
+                size: randFloat(2, 5),
+            });
+        }
+
+        addLog(`Hit ${nearest.name} for ${actualDmg} damage!`, 'damage');
+
+        if (nearest.hp <= 0) {
+            killCreature(nearest);
+        }
+    }
+
+    // Attack visual (swing arc)
+    const angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
+    for (let i = 0; i < 3; i++) {
+        const a = angle + randFloat(-0.5, 0.5);
+        particles.push({
+            x: player.x + Math.cos(a) * 20,
+            y: player.y + Math.sin(a) * 20,
+            vx: Math.cos(a) * 80, vy: Math.sin(a) * 80,
+            life: 0.2, maxLife: 0.2,
+            color: '#e0d5a0', size: 3,
+        });
+    }
+}
+
+function killCreature(c) {
+    c.dead = true;
+
+    if (c.isBoss) {
+        player.bossesDefeated++;
+        addLog(`⭐ BOSS DEFEATED: ${c.name}!`, 'boss');
+        // Burst of particles
+        for (let i = 0; i < 30; i++) {
+            particles.push({
+                x: c.x, y: c.y,
+                vx: randFloat(-120, 120), vy: randFloat(-120, 120),
+                life: 1.5, maxLife: 1.5,
+                color: c.bossColor, size: randFloat(3, 8),
+            });
+        }
+    } else {
+        addLog(`Defeated ${c.name}!`, 'info');
+    }
+
+    // Drop items
+    if (c.drops) {
+        for (const dropName of c.drops) {
+            if (Math.random() < 0.6) {
+                groundItems.push({
+                    x: c.x + randFloat(-15, 15),
+                    y: c.y + randFloat(-15, 15),
+                    name: dropName,
+                    emoji: getItemEmoji(dropName),
+                    collected: false,
+                });
+            }
+        }
+    }
+
+    // Drop meat always
+    groundItems.push({
+        x: c.x + randFloat(-10, 10),
+        y: c.y + randFloat(-10, 10),
+        name: 'Meat', emoji: '🍖', hunger: 20, collected: false,
+    });
+}
+
+function getItemEmoji(name) {
+    const map = {
+        'Wool':'🧶','Mutton':'🍖','Fur':'🧥','Meat':'🍖','Honey':'🍯',
+        'Leather':'🟤','Venom':'☠️','Chitin':'🛡️','Scales':'🐍','Slime':'🟢',
+        'Golden Wool':'✨','Thunder Horn':'⚡','Ancient Wood':'🌳','Heart of Forest':'💚',
+        'Amber':'🟠','Mammoth Tusk':'🦷','Frost Core':'❄️','Thick Fur':'🧥',
+        'Titan Ore':'⛏️','Crystal Heart':'💎','Gemstone':'💎','Obsidian Fang':'🖤',
+        'Lava Core':'🔥','Dragon Scale':'🐉','Desert Crown':'👑','Sun Stone':'☀️',
+        'Hydra Fang':'🐍','Swamp Crystal':'💎','Venom Sac':'☠️',
+        'Leviathan Scale':'🐋','Ocean Pearl':'🫧','Trident Shard':'🔱',
+        'Wood':'🪵','Stone':'🪨','Iron Ore':'⛏️','Reed':'🌿',
+    };
+    return map[name] || '📦';
+}
+
+// ============================================================
+// UPDATE LOGIC
+// ============================================================
+function update(dt) {
+    if (!gameStarted || gamePaused) return;
+
+    gameTime += dt;
+    dayTime += dt;
+    if (dayTime > 120) { dayTime = 0; dayCount++; } // 2 min days
+
+    // Player movement
+    let mx = 0, my = 0;
+    if (keys['w'] || keys['arrowup'])    my -= 1;
+    if (keys['s'] || keys['arrowdown'])  my += 1;
+    if (keys['a'] || keys['arrowleft'])  mx -= 1;
+    if (keys['d'] || keys['arrowright']) mx += 1;
+
+    if (mx !== 0 || my !== 0) {
+        const len = Math.sqrt(mx*mx + my*my);
+        mx /= len; my /= len;
+        player.facing = Math.atan2(my, mx);
+    }
+
+    // Get biome speed modifier
+    const ptx = clamp(Math.floor(player.x / TILE), 0, MAP_W-1);
+    const pty = clamp(Math.floor(player.y / TILE), 0, MAP_H-1);
+    const currentBiome = mapTiles[pty][ptx];
+    const speedMod = BIOME_SPEED_MOD[currentBiome] || 1.0;
+
+    let speed = player.speed * speedMod;
+    if (player.dashing) speed = DASH_SPEED;
+
+    const newX = player.x + mx * speed * dt;
+    const newY = player.y + my * speed * dt;
+
+    // Collision check
+    const ntx = clamp(Math.floor(newX / TILE), 0, MAP_W-1);
+    const nty = clamp(Math.floor(newY / TILE), 0, MAP_H-1);
+    const targetBiome = mapTiles[nty][ntx];
+
+    if (BIOME_WALKABLE[targetBiome] || (targetBiome === BIOMES.OCEAN && mapDecorations[nty] && mapDecorations[nty][ntx] && mapDecorations[nty][ntx].shallow)) {
+        player.x = clamp(newX, TILE, (MAP_W-1) * TILE);
+        player.y = clamp(newY, TILE, (MAP_H-1) * TILE);
+    } else {
+        // Try sliding along walls
+        const ntx2 = clamp(Math.floor(newX / TILE), 0, MAP_W-1);
+        const nty2 = clamp(Math.floor(player.y / TILE), 0, MAP_H-1);
+        const b2 = mapTiles[nty2][ntx2];
+        if (BIOME_WALKABLE[b2] || (b2 === BIOMES.OCEAN && mapDecorations[nty2][ntx2].shallow)) {
+            player.x = clamp(newX, TILE, (MAP_W-1) * TILE);
+        } else {
+            const ntx3 = clamp(Math.floor(player.x / TILE), 0, MAP_W-1);
+            const nty3 = clamp(Math.floor(newY / TILE), 0, MAP_H-1);
+            const b3 = mapTiles[nty3][ntx3];
+            if (BIOME_WALKABLE[b3] || (b3 === BIOMES.OCEAN && mapDecorations[nty3][ntx3].shallow)) {
+                player.y = clamp(newY, TILE, (MAP_H-1) * TILE);
+            }
+        }
+    }
+
+    // Dash timer
+    if (player.dashing) {
+        player.dashTimer -= dt;
+        if (player.dashTimer <= 0) player.dashing = false;
+    }
+    player.dashCooldown = Math.max(0, player.dashCooldown - dt);
+    player.attackCooldown = Math.max(0, player.attackCooldown - dt);
+    player.invincibleTimer = Math.max(0, player.invincibleTimer - dt);
+
+    // Stamina regen
+    if (!player.dashing && player.stamina < player.maxStamina) {
+        player.stamina = Math.min(player.maxStamina, player.stamina + 8 * dt);
+    }
+
+    // Survival stats
+    player.hunger = Math.max(0, player.hunger - 1.2 * dt);
+    player.thirst = Math.max(0, player.thirst - 1.5 * dt);
+
+    // Biome effects
+    if (currentBiome === BIOMES.SNOW) {
+        player.warmth = Math.max(0, player.warmth - 3 * dt);
+    } else if (currentBiome === BIOMES.VOLCANO) {
+        player.warmth = Math.min(100, player.warmth + 2 * dt);
+        if (player.warmth > 90) player.health -= 2 * dt; // overheating
+    } else if (currentBiome === BIOMES.DESERT) {
+        player.thirst = Math.max(0, player.thirst - 2 * dt); // extra thirst
+        player.warmth = Math.min(100, player.warmth + 1 * dt);
+    } else if (currentBiome === BIOMES.SWAMP) {
+        if (Math.random() < 0.002) { // Poison chance
+            player.health -= 3;
+            addLog('The swamp air poisons you!', 'damage');
+        }
+    } else {
+        // Normal warmth recovery
+        player.warmth = Math.min(100, player.warmth + 1.5 * dt);
+    }
+
+    // Stat consequences
+    if (player.hunger <= 0) player.health -= 3 * dt;
+    if (player.thirst <= 0) player.health -= 4 * dt;
+    if (player.warmth <= 10) player.health -= 2 * dt;
+
+    // Slow health regen if well-fed
+    if (player.hunger > 50 && player.thirst > 50 && player.health < player.maxHealth) {
+        player.health = Math.min(player.maxHealth, player.health + 0.5 * dt);
+    }
+
+    // Death check
+    if (player.health <= 0) {
+        player.health = 0;
+        showDeathScreen();
+    }
+
+    // Camera
+    camera.zoom = lerp(camera.zoom, camera.targetZoom, 5 * dt);
+    camera.x = lerp(camera.x, player.x, 5 * dt);
+    camera.y = lerp(camera.y, player.y, 5 * dt);
+
+    // Update fog
+    updateFog();
+
+    // Item pickup
+    for (const item of groundItems) {
+        if (item.collected) continue;
+        if (dist(player.x, player.y, item.x, item.y) < 20) {
+            pickupItem(item);
+        }
+    }
+
+    // Creature AI
+    for (const c of creatures) {
+        if (c.dead) continue;
+        updateCreature(c, dt);
+    }
+
+    // Particles
+    for (const p of particles) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+    }
+    particles = particles.filter(p => p.life > 0);
+
+    // Damage numbers
+    for (const dn of damageNumbers) {
+        dn.y -= 30 * dt;
+        dn.timer -= dt;
+    }
+    damageNumbers = damageNumbers.filter(dn => dn.timer > 0);
+
+    // Update mouse world position
+    updateMouseWorld();
+}
+
+function updateCreature(c, dt) {
+    const d = dist(player.x, player.y, c.x, c.y);
+    const aggroRange = c.isBoss ? 120 : 80;
+
+    if (d < aggroRange && fogMap[Math.floor(c.y/TILE)]?.[Math.floor(c.x/TILE)] === 2) {
+        // Chase player
+        c.ai = 'chase';
+        const angle = Math.atan2(player.y - c.y, player.x - c.x);
+        c.x += Math.cos(angle) * c.speed * dt;
+        c.y += Math.sin(angle) * c.speed * dt;
+
+        // Attack player
+        if (d < 25) {
+            c.attackTimer -= dt;
+            if (c.attackTimer <= 0) {
+                if (player.invincibleTimer <= 0 && !player.dashing) {
+                    const dmg = c.dmg + randInt(-2, 2);
+                    player.health -= dmg;
+                    player.invincibleTimer = 0.5;
+                    damageNumbers.push({
+                        x: player.x, y: player.y - 10,
+                        text: `-${dmg}`, color: '#ff6b6b', timer: 1.0
+                    });
+                    addLog(`${c.name} hit you for ${dmg}!`, 'damage');
+
+                    // Knockback player
+                    const kb = Math.atan2(player.y - c.y, player.x - c.x);
+                    player.x += Math.cos(kb) * 15;
+                    player.y += Math.sin(kb) * 15;
+                }
+                c.attackTimer = c.isBoss ? 0.8 : 1.2;
+            }
+        }
+    } else {
+        // Wander
+        c.ai = 'wander';
+        c.moveTimer -= dt;
+        if (c.moveTimer <= 0) {
+            c.targetX = c.x + randFloat(-60, 60);
+            c.targetY = c.y + randFloat(-60, 60);
+            c.moveTimer = randFloat(2, 5);
+        }
+        const angle = Math.atan2(c.targetY - c.y, c.targetX - c.x);
+        const wanderSpeed = c.speed * 0.3;
+        c.x += Math.cos(angle) * wanderSpeed * dt;
+        c.y += Math.sin(angle) * wanderSpeed * dt;
+
+        // Keep in map bounds
+        c.x = clamp(c.x, TILE * 2, (MAP_W - 2) * TILE);
+        c.y = clamp(c.y, TILE * 2, (MAP_H - 2) * TILE);
+    }
+
+    c.flashTimer = Math.max(0, c.flashTimer - dt);
+}
+
+function pickupItem(item) {
+    item.collected = true;
+
+    // Apply immediate effects
+    if (item.heal) player.health = Math.min(player.maxHealth, player.health + item.heal);
+    if (item.hunger) player.hunger = Math.min(player.maxHunger, player.hunger + item.hunger);
+    if (item.thirst) player.thirst = Math.min(player.maxThirst, player.thirst + item.thirst);
+
+    if (item.isWeapon) {
+        player.equippedWeapon = { name: item.name, emoji: item.emoji, atk: item.atk, desc: item.desc };
+        addLog(`Equipped ${item.name}! (+${item.atk} ATK)`, 'item');
+        document.getElementById('atkVal').textContent = player.atk + item.atk;
+    } else {
+        addLog(`Picked up ${item.name}`, 'item');
+    }
+
+    // Add to inventory
+    const existing = player.inventory.find(i => i.name === item.name);
+    if (existing) {
+        existing.qty++;
+    } else {
+        player.inventory.push({
+            name: item.name,
+            emoji: item.emoji || '📦',
+            qty: 1,
+            heal: item.heal || 0,
+            hunger: item.hunger || 0,
+            thirst: item.thirst || 0,
+        });
+    }
+
+    if (showInventory) renderInventory();
+
+    // Pickup particles
+    for (let i = 0; i < 8; i++) {
+        particles.push({
+            x: item.x, y: item.y,
+            vx: randFloat(-40, 40), vy: randFloat(-60, -20),
+            life: 0.6, maxLife: 0.6,
+            color: '#f1c40f', size: randFloat(2, 4),
+        });
+    }
+}
+
+function useInventoryItem(idx) {
+    const item = player.inventory[idx];
+    if (!item) return;
+
+    if (item.heal) {
+        player.health = Math.min(player.maxHealth, player.health + item.heal);
+        addLog(`Used ${item.name} (+${item.heal} HP)`, 'heal');
+    }
+    if (item.hunger) {
+        player.hunger = Math.min(player.maxHunger, player.hunger + item.hunger);
+        addLog(`Ate ${item.name} (+${item.hunger} hunger)`, 'heal');
+    }
+    if (item.thirst) {
+        player.thirst = Math.min(player.maxThirst, player.thirst + item.thirst);
+        addLog(`Drank ${item.name} (+${item.thirst} thirst)`, 'heal');
+    }
+
+    item.qty--;
+    if (item.qty <= 0) player.inventory.splice(idx, 1);
+    renderInventory();
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+function render() {
+    // Resize canvas
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    ctx.fillStyle = '#0a0a15';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (!gameStarted) return;
+
+    ctx.save();
+
+    // Camera transform
+    ctx.translate(canvas.width/2, canvas.height/2);
+    ctx.scale(camera.zoom, camera.zoom);
+    ctx.translate(-camera.x, -camera.y);
+
+    // Calculate visible tile range
+    const halfW = (canvas.width / 2) / camera.zoom;
+    const halfH = (canvas.height / 2) / camera.zoom;
+    const startX = Math.max(0, Math.floor((camera.x - halfW) / TILE) - 1);
+    const startY = Math.max(0, Math.floor((camera.y - halfH) / TILE) - 1);
+    const endX = Math.min(MAP_W - 1, Math.ceil((camera.x + halfW) / TILE) + 1);
+    const endY = Math.min(MAP_H - 1, Math.ceil((camera.y + halfH) / TILE) + 1);
+
+    // Draw tiles
+    for (let y = startY; y <= endY; y++) {
+        for (let x = startX; x <= endX; x++) {
+            const fog = fogMap[y][x];
+            if (fog === 0) {
+                // Hidden - draw dark
+                ctx.fillStyle = '#0a0a15';
+                ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+                continue;
+            }
+
+            const biome = mapTiles[y][x];
+            const dec = mapDecorations[y][x];
+            const colors = BIOME_COLORS[biome];
+            const cv = dec.colorVar;
+
+            // Base tile color with variation
+            const r = clamp(colors.base[0] + cv, 0, 255);
+            const g = clamp(colors.base[1] + cv, 0, 255);
+            const b = clamp(colors.base[2] + cv, 0, 255);
+            ctx.fillStyle = rgbStr(r, g, b);
+            ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+
+            // Draw decoration
+            drawDecoration(x, y, biome, dec);
+
+            // Fog overlay for explored (not currently visible)
+            if (fog === 1) {
+                ctx.fillStyle = 'rgba(10,10,21,0.55)';
+                ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+            }
+        }
+    }
+
+    // Draw ground items
+    for (const item of groundItems) {
+        if (item.collected) continue;
+        const itx = Math.floor(item.x / TILE);
+        const ity = Math.floor(item.y / TILE);
+        if (itx < startX || itx > endX || ity < startY || ity > endY) continue;
+        if (fogMap[ity]?.[itx] !== 2) continue;
+
+        // Bobbing animation
+        const bob = Math.sin(gameTime * 3 + item.x) * 3;
+
+        // Glow
+        if (item.isWeapon) {
+            ctx.shadowColor = '#f1c40f';
+            ctx.shadowBlur = 10;
+        }
+
+        ctx.font = item.isWeapon ? '18px serif' : '14px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(item.emoji, item.x, item.y + bob);
+        ctx.shadowBlur = 0;
+    }
+
+    // Draw creatures
+    for (const c of creatures) {
+        if (c.dead) continue;
+        const ctx2 = Math.floor(c.x / TILE);
+        const cty = Math.floor(c.y / TILE);
+        if (ctx2 < startX - 2 || ctx2 > endX + 2 || cty < startY - 2 || cty > endY + 2) continue;
+        if (fogMap[cty]?.[ctx2] !== 2) continue;
+
+        drawCreature(c);
+    }
+
+    // Draw player
+    drawPlayer();
+
+    // Draw particles
+    for (const p of particles) {
+        const alpha = p.life / p.maxLife;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Draw damage numbers
+    for (const dn of damageNumbers) {
+        const alpha = dn.timer;
+        ctx.globalAlpha = alpha;
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillStyle = dn.color;
+        ctx.textAlign = 'center';
+        ctx.fillText(dn.text, dn.x, dn.y);
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+
+    // Update HUD
+    updateHUD();
+
+    // Update minimap
+    if (showMinimap) renderMinimap();
+}
+
+function drawDecoration(x, y, biome, dec) {
+    const px = x * TILE;
+    const py = y * TILE;
+    const cx = px + TILE/2;
+    const cy = py + TILE/2;
+
+    switch(dec.type) {
+        case 'flower': {
+            const colors = ['#e74c3c','#f39c12','#9b59b6','#e91e63','#ff9800'];
+            ctx.fillStyle = colors[Math.floor(dec.r * 50) % colors.length];
+            ctx.beginPath();
+            ctx.arc(cx + (dec.r-0.5)*12, cy + (dec.r*7-3), 3, 0, Math.PI*2);
+            ctx.fill();
+            break;
+        }
+        case 'tall_grass': {
+            ctx.strokeStyle = rgbStr(80, 160, 80);
+            ctx.lineWidth = 1.5;
+            const gx = cx + (dec.r-0.5)*10;
+            ctx.beginPath();
+            ctx.moveTo(gx, py + TILE);
+            ctx.quadraticCurveTo(gx + 4, cy - 2, gx + 2, py + 6);
+            ctx.stroke();
+            break;
+        }
+        case 'bush': {
+            ctx.fillStyle = rgbStr(50, 140, 50);
+            ctx.beginPath();
+            ctx.arc(cx, cy + 4, 6, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = rgbStr(40, 120, 40);
+            ctx.beginPath();
+            ctx.arc(cx - 3, cy + 2, 5, 0, Math.PI*2);
+            ctx.fill();
+            break;
+        }
+        case 'tree': {
+            // Trunk
+            ctx.fillStyle = '#5d4037';
+            ctx.fillRect(cx - 2, cy, 4, 10);
+            // Canopy
+            ctx.fillStyle = rgbStr(20 + dec.colorVar, 90 + dec.colorVar, 30);
+            ctx.beginPath();
+            ctx.arc(cx, cy - 2, 9, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = rgbStr(15 + dec.colorVar, 80 + dec.colorVar, 25);
+            ctx.beginPath();
+            ctx.arc(cx - 3, cy + 1, 7, 0, Math.PI*2);
+            ctx.fill();
+            break;
+        }
+        case 'mushroom': {
+            ctx.fillStyle = '#f5f5dc';
+            ctx.fillRect(cx - 1, cy + 2, 2, 5);
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(cx, cy + 1, 4, Math.PI, 0);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(cx - 1, cy, 1.5, 0, Math.PI*2);
+            ctx.fill();
+            break;
+        }
+        case 'pine_snow': {
+            ctx.fillStyle = '#2d5a2d';
+            ctx.beginPath();
+            ctx.moveTo(cx, py + 4);
+            ctx.lineTo(cx - 7, py + TILE - 4);
+            ctx.lineTo(cx + 7, py + TILE - 4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#eee';
+            ctx.beginPath();
+            ctx.moveTo(cx, py + 4);
+            ctx.lineTo(cx - 4, py + 12);
+            ctx.lineTo(cx + 4, py + 12);
+            ctx.closePath();
+            ctx.fill();
+            break;
+        }
+        case 'ice_crystal': {
+            ctx.fillStyle = 'rgba(173,216,230,0.6)';
+            ctx.beginPath();
+            ctx.moveTo(cx, py + 6);
+            ctx.lineTo(cx + 5, cy);
+            ctx.lineTo(cx, py + TILE - 6);
+            ctx.lineTo(cx - 5, cy);
+            ctx.closePath();
+            ctx.fill();
+            break;
+        }
+        case 'rock': {
+            ctx.fillStyle = rgbStr(100 + dec.colorVar, 100 + dec.colorVar, 105 + dec.colorVar);
+            ctx.beginPath();
+            ctx.moveTo(cx - 6, cy + 5);
+            ctx.lineTo(cx - 3, cy - 5);
+            ctx.lineTo(cx + 4, cy - 4);
+            ctx.lineTo(cx + 7, cy + 3);
+            ctx.closePath();
+            ctx.fill();
+            break;
+        }
+        case 'boulder': {
+            ctx.fillStyle = rgbStr(90, 90, 95);
+            ctx.beginPath();
+            ctx.arc(cx, cy, 8, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = rgbStr(110, 110, 115);
+            ctx.beginPath();
+            ctx.arc(cx - 2, cy - 2, 5, 0, Math.PI*2);
+            ctx.fill();
+            break;
+        }
+        case 'lava_crack': {
+            ctx.strokeStyle = rgbStr(220, 80, 30, 0.8);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(px + 4, py + 8);
+            ctx.lineTo(cx + 2, cy);
+            ctx.lineTo(px + 10, py + TILE - 5);
+            ctx.stroke();
+            ctx.strokeStyle = rgbStr(255, 160, 40, 0.5);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            break;
+        }
+        case 'ash_vent': {
+            ctx.fillStyle = 'rgba(60,60,60,0.5)';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5, 0, Math.PI*2);
+            ctx.fill();
+            // Smoke
+            const smokeY = cy - 8 - Math.sin(gameTime * 2 + x) * 3;
+            ctx.fillStyle = 'rgba(100,100,100,0.3)';
+            ctx.beginPath();
+            ctx.arc(cx, smokeY, 4, 0, Math.PI*2);
+            ctx.fill();
+            break;
+        }
+        case 'cactus': {
+            ctx.fillStyle = '#2d8a4e';
+            ctx.fillRect(cx - 2, cy - 6, 4, 14);
+            ctx.fillRect(cx - 7, cy - 3, 5, 3);
+            ctx.fillRect(cx + 2, cy - 1, 5, 3);
+            break;
+        }
+        case 'bones': {
+            ctx.fillStyle = '#e0d5c0';
+            ctx.fillRect(cx - 5, cy, 10, 2);
+            ctx.fillRect(cx - 1, cy - 4, 2, 10);
+            break;
+        }
+        case 'dune': {
+            ctx.fillStyle = rgbStr(210, 190, 120, 0.4);
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + 3, 10, 4, 0, 0, Math.PI*2);
+            ctx.fill();
+            break;
+        }
+        case 'lily_pad': {
+            ctx.fillStyle = '#4a8a3a';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5, 0.2, Math.PI*2 - 0.2);
+            ctx.lineTo(cx, cy);
+            ctx.fill();
+            break;
+        }
+        case 'dead_tree': {
+            ctx.strokeStyle = '#4a3a2a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, py + TILE - 2);
+            ctx.lineTo(cx, cy - 4);
+            ctx.lineTo(cx - 5, cy - 8);
+            ctx.moveTo(cx, cy - 4);
+            ctx.lineTo(cx + 4, cy - 9);
+            ctx.stroke();
+            break;
+        }
+        case 'puddle': {
+            ctx.fillStyle = 'rgba(60,90,50,0.5)';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + 2, 7, 4, 0, 0, Math.PI*2);
+            ctx.fill();
+            break;
+        }
+        case 'ripple': {
+            const rt = gameTime * 2 + x * 3;
+            ctx.strokeStyle = 'rgba(133,193,233,0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4 + Math.sin(rt) * 2, 0, Math.PI*2);
+            ctx.stroke();
+            break;
+        }
+        case 'wave': {
+            const wt = gameTime * 1.5 + y * 2;
+            ctx.strokeStyle = 'rgba(100,160,220,0.3)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(px + 4, cy + Math.sin(wt) * 3);
+            ctx.quadraticCurveTo(cx, cy - 4 + Math.sin(wt + 1) * 3, px + TILE - 4, cy + Math.sin(wt + 2) * 3);
+            ctx.stroke();
+            break;
+        }
+    }
+}
+
+function drawCreature(c) {
+    const size = c.isBoss ? 24 : 16;
+
+    // Boss glow
+    if (c.isBoss) {
+        ctx.shadowColor = c.bossColor;
+        ctx.shadowBlur = 15 + Math.sin(gameTime * 3) * 5;
+    }
+
+    // Flash white when hit
+    if (c.flashTimer > 0) {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, size/2 + 2, 0, Math.PI*2);
+        ctx.fill();
+    }
+
+    // Emoji
+    ctx.font = `${size}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(c.emoji, c.x, c.y);
+    ctx.shadowBlur = 0;
+
+    // Health bar (only when damaged or boss)
+    if (c.hp < c.maxHp || c.isBoss) {
+        const barW = c.isBoss ? 40 : 24;
+        const barH = 3;
+        const barX = c.x - barW/2;
+        const barY = c.y - size/2 - 6;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+
+        const hpPct = c.hp / c.maxHp;
+        ctx.fillStyle = c.isBoss ? c.bossColor : (hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c');
+        ctx.fillRect(barX, barY, barW * hpPct, barH);
+    }
+
+    // Boss name
+    if (c.isBoss) {
+        ctx.font = '10px sans-serif';
+        ctx.fillStyle = c.bossColor;
+        ctx.textAlign = 'center';
+        ctx.fillText(`★ ${c.name}`, c.x, c.y - size/2 - 12);
+    }
+}
+
+function drawPlayer() {
+    const px = player.x;
+    const py = player.y;
+
+    // Invincibility flash
+    if (player.invincibleTimer > 0 && Math.floor(gameTime * 10) % 2 === 0) return;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(px, py + 8, 8, 4, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Body
+    ctx.fillStyle = '#3498db';
+    ctx.beginPath();
+    ctx.arc(px, py, 8, 0, Math.PI*2);
+    ctx.fill();
+
+    // Direction indicator
+    const fx = px + Math.cos(player.facing) * 12;
+    const fy = py + Math.sin(player.facing) * 12;
+    ctx.strokeStyle = '#e0d5a0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px + Math.cos(player.facing) * 8, py + Math.sin(player.facing) * 8);
+    ctx.lineTo(fx, fy);
+    ctx.stroke();
+
+    // Weapon
+    if (player.equippedWeapon) {
+        ctx.font = '12px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(player.equippedWeapon.emoji, fx, fy);
+    }
+
+    // Eyes
+    const ex1 = px + Math.cos(player.facing - 0.4) * 4;
+    const ey1 = py + Math.sin(player.facing - 0.4) * 4;
+    const ex2 = px + Math.cos(player.facing + 0.4) * 4;
+    const ey2 = py + Math.sin(player.facing + 0.4) * 4;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ex1, ey1, 2, 0, Math.PI*2);
+    ctx.arc(ex2, ey2, 2, 0, Math.PI*2);
+    ctx.fill();
+
+    // Dash trail
+    if (player.dashing) {
+        for (let i = 0; i < 3; i++) {
+            particles.push({
+                x: px + randFloat(-5, 5),
+                y: py + randFloat(-5, 5),
+                vx: randFloat(-20, 20), vy: randFloat(-20, 20),
+                life: 0.3, maxLife: 0.3,
+                color: '#85c1e9', size: randFloat(3, 6),
+            });
+        }
+    }
+}
+
+// ============================================================
+// HUD
+// ============================================================
+function updateHUD() {
+    const setBars = (id, val, max) => {
+        const pct = clamp((val / max) * 100, 0, 100);
+        document.getElementById(id + 'Bar').style.width = pct + '%';
+        document.getElementById(id + 'Val').textContent = Math.round(val);
+    };
+
+    setBars('health', player.health, player.maxHealth);
+    setBars('hunger', player.hunger, player.maxHunger);
+    setBars('thirst', player.thirst, player.maxThirst);
+    setBars('warmth', player.warmth, player.maxWarmth);
+    setBars('stamina', player.stamina, player.maxStamina);
+
+    // Biome indicator
+    const ptx = clamp(Math.floor(player.x / TILE), 0, MAP_W-1);
+    const pty = clamp(Math.floor(player.y / TILE), 0, MAP_H-1);
+    const biome = mapTiles[pty][ptx];
+    const biomeEl = document.getElementById('biomeIndicator');
+    const biomeEmojis = ['🌊','🌾','🌲','❄️','⛰️','🌋','🏜️','🪷','🏞️'];
+    biomeEl.textContent = biomeEmojis[biome] + ' ' + BIOME_NAMES[biome];
+
+    // Explore info
+    document.getElementById('explorePercent').textContent = getExplorePercent();
+    document.getElementById('bossCount').textContent = player.bossesDefeated;
+    document.getElementById('dayCounter').textContent = `Day ${dayCount}`;
+}
+
+function renderInventory() {
+    const grid = document.getElementById('invGrid');
+    grid.innerHTML = '';
+
+    // 24 slots
+    for (let i = 0; i < 24; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'inv-slot';
+
+        if (i < player.inventory.length) {
+            const item = player.inventory[i];
+            slot.innerHTML = `
+                <span>${item.emoji}</span>
+                <span class="item-name">${item.name}</span>
+                ${item.qty > 1 ? `<span class="qty">×${item.qty}</span>` : ''}
+            `;
+            slot.title = `${item.name}${item.heal ? ' (Heals '+item.heal+')' : ''}${item.hunger ? ' (Food '+item.hunger+')' : ''}${item.thirst ? ' (Water '+item.thirst+')' : ''}`;
+
+            // Click to use consumable items
+            if (item.heal || item.hunger || item.thirst) {
+                slot.style.cursor = 'pointer';
+                slot.addEventListener('click', () => useInventoryItem(i));
+            }
+        }
+
+        grid.appendChild(slot);
+    }
+}
+
+function renderMinimap() {
+    const mw = minimapCanvas.width;
+    const mh = minimapCanvas.height;
+    const sx = mw / MAP_W;
+    const sy = mh / MAP_H;
+
+    minimapCtx.fillStyle = '#0a0a15';
+    minimapCtx.fillRect(0, 0, mw, mh);
+
+    // Draw biome colors for explored tiles
+    for (let y = 0; y < MAP_H; y++) {
+        for (let x = 0; x < MAP_W; x++) {
+            if (fogMap[y][x] === 0) continue;
+
+            const biome = mapTiles[y][x];
+            const c = BIOME_COLORS[biome].base;
+            const alpha = fogMap[y][x] === 2 ? 1 : 0.5;
+            minimapCtx.fillStyle = rgbStr(c[0], c[1], c[2], alpha);
+            minimapCtx.fillRect(x * sx, y * sy, Math.ceil(sx), Math.ceil(sy));
+        }
+    }
+
+    // Draw creatures on minimap (bosses only)
+    for (const c of creatures) {
+        if (c.dead || !c.isBoss) continue;
+        const tx = Math.floor(c.x / TILE);
+        const ty = Math.floor(c.y / TILE);
+        if (fogMap[ty]?.[tx] > 0) {
+            minimapCtx.fillStyle = c.bossColor;
+            minimapCtx.beginPath();
+            minimapCtx.arc(tx * sx + sx/2, ty * sy + sy/2, 3, 0, Math.PI*2);
+            minimapCtx.fill();
+        }
+    }
+
+    // Draw player position
+    const ppx = (player.x / TILE) * sx;
+    const ppy = (player.y / TILE) * sy;
+    minimapCtx.fillStyle = '#fff';
+    minimapCtx.beginPath();
+    minimapCtx.arc(ppx, ppy, 3, 0, Math.PI*2);
+    minimapCtx.fill();
+    minimapCtx.strokeStyle = '#3498db';
+    minimapCtx.lineWidth = 1;
+    minimapCtx.stroke();
+
+    // Draw vision circle
+    minimapCtx.strokeStyle = 'rgba(255,255,255,0.3)';
+    minimapCtx.lineWidth = 0.5;
+    minimapCtx.beginPath();
+    minimapCtx.arc(ppx, ppy, VISION_RADIUS * sx, 0, Math.PI*2);
+    minimapCtx.stroke();
+}
+
+// ============================================================
+// COMBAT LOG
+// ============================================================
+function addLog(text, type = 'info') {
+    const log = document.getElementById('combatLog');
+    const msg = document.createElement('div');
+    msg.className = `log-msg ${type}`;
+    msg.textContent = text;
+    log.insertBefore(msg, log.firstChild);
+
+    // Limit log messages
+    while (log.children.length > 10) {
+        log.removeChild(log.lastChild);
+    }
+
+    // Auto-remove after animation
+    setTimeout(() => { if (msg.parentNode) msg.parentNode.removeChild(msg); }, 5000);
+}
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+let lastTime = 0;
+
+function gameLoop(timestamp) {
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05); // Cap at 50ms
+    lastTime = timestamp;
+
+    update(dt);
+    render();
+
+    requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+// GAME START / RESTART
+// ============================================================
+function startGame() {
+    document.getElementById('titleScreen').classList.add('hidden');
+    setTimeout(() => {
+        document.getElementById('titleScreen').style.display = 'none';
+    }, 1000);
+
+    generateMap();
+    spawnCreatures();
+    spawnGroundItems();
+    updateFog();
+
+    camera.x = player.x;
+    camera.y = player.y;
+
+    gameStarted = true;
+
+    // Show HUD elements
+    document.getElementById('hud').classList.add('visible');
+    document.getElementById('biomeIndicator').classList.add('visible');
+    document.getElementById('exploreInfo').classList.add('visible');
+    if (showMinimap) document.getElementById('minimapContainer').classList.add('visible');
+
+    addLog('Welcome to the wilderness. Explore, survive, defeat all bosses!', 'info');
+    addLog('Use WASD to move, click to attack, I for inventory', 'info');
+}
+
+function showDeathScreen() {
+    gamePaused = true;
+    const causes = [
+        'The wilderness claimed another soul...',
+        'Your journey ends here...',
+        'The fog swallows you whole...',
+        'Nature is unforgiving...',
+    ];
+    document.getElementById('deathCause').textContent = causes[randInt(0, causes.length-1)];
+    document.getElementById('deathScreen').classList.add('show');
+}
+
+function restartGame() {
+    document.getElementById('deathScreen').classList.remove('show');
+
+    player.x = 48 * TILE; player.y = 42 * TILE;
+    player.health = player.maxHealth;
+    player.hunger = player.maxHunger;
+    player.thirst = player.maxThirst;
+    player.warmth = player.maxWarmth;
+    player.stamina = player.maxStamina;
+    player.inventory = [];
+    player.equippedWeapon = null;
+    player.bossesDefeated = 0;
+    player.atk = 5;
+    document.getElementById('atkVal').textContent = '5';
+
+    gameTime = 0; dayTime = 0; dayCount = 1;
+
+    // Regenerate
+    generateMap();
+    spawnCreatures();
+    spawnGroundItems();
+    updateFog();
+
+    camera.x = player.x;
+    camera.y = player.y;
+
+    particles = [];
+    damageNumbers = [];
+    gamePaused = false;
+
+    addLog('A new expedition begins...', 'info');
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+function init() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+    // Start the game loop (title screen is showing)
+    requestAnimationFrame(gameLoop);
+}
+
+init();
+</script>
+</body>
+</html>
