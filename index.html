@@ -274,7 +274,7 @@
     <!-- Explore Info -->
     <div id="exploreInfo">
         <div>🗺️ Explored: <span id="explorePercent">0</span>%</div>
-        <div>🏆 Bosses: <span id="bossCount">0/20</span></div>
+        <div>🏆 Bosses: <span id="bossCount">0/12</span></div>
         <div>⏱️ <span id="dayCounter">Day 1</span></div>
     </div>
 
@@ -351,30 +351,35 @@ const BIOME_SPEED_MOD = {
     0: 0, 1: 1.0, 2: 0.85, 3: 0.75, 4: 0.6, 5: 0.7, 6: 0.8, 7: 0.65, 8: 0.5
 };
 
-// Creature definitions per biome
+// Creature definitions per biome (sheep/frogs/goats are passive)
 const CREATURE_DEFS = {
-    1: [{ name:'Sheep',     emoji:'🐑', hp:20,  dmg:2,  speed:30,  xp:5,  drops:['Wool','Mutton'] }],
+    1: [{ name:'Sheep',     emoji:'🐑', hp:20,  dmg:0,  speed:25,  xp:5,  drops:['Wool','Mutton'], passive:true },
+        { name:'Rabbit',    emoji:'🐇', hp:10,  dmg:0,  speed:50,  xp:3,  drops:['Meat'], passive:true }],
     2: [{ name:'Wolf',      emoji:'🐺', hp:40,  dmg:8,  speed:60,  xp:15, drops:['Fur','Meat'] },
         { name:'Bear',      emoji:'🐻', hp:80,  dmg:15, speed:40,  xp:30, drops:['Fur','Meat','Honey'] }],
-    3: [{ name:'Arctic Fox', emoji:'🦊', hp:30, dmg:5,  speed:55,  xp:10, drops:['Fur','Meat'] }],
-    4: [{ name:'Goat',      emoji:'🐐', hp:35,  dmg:6,  speed:45,  xp:10, drops:['Meat','Leather'] }],
-    5: [{ name:'Scorpion',  emoji:'🦂', hp:25,  dmg:12, speed:50,  xp:15, drops:['Venom','Chitin'] }],
+    3: [{ name:'Arctic Fox', emoji:'🦊', hp:30, dmg:5,  speed:55,  xp:10, drops:['Fur','Meat'] },
+        { name:'Penguin',    emoji:'🐧', hp:15, dmg:0,  speed:30,  xp:3,  drops:['Meat'], passive:true }],
+    4: [{ name:'Goat',      emoji:'🐐', hp:35,  dmg:0,  speed:45,  xp:10, drops:['Meat','Leather'], passive:true },
+        { name:'Eagle',     emoji:'🦅', hp:25,  dmg:8,  speed:70,  xp:12, drops:['Feather','Meat'] }],
+    5: [{ name:'Scorpion',  emoji:'🦂', hp:25,  dmg:12, speed:50,  xp:15, drops:['Venom','Chitin'] },
+        { name:'Fire Imp',  emoji:'👹', hp:35,  dmg:15, speed:55,  xp:20, drops:['Ember','Ash'] }],
     6: [{ name:'Snake',     emoji:'🐍', hp:20,  dmg:10, speed:55,  xp:10, drops:['Venom','Scales'] },
         { name:'Lizard',    emoji:'🦎', hp:30,  dmg:8,  speed:45,  xp:12, drops:['Scales','Meat'] }],
-    7: [{ name:'Frog',      emoji:'🐸', hp:15,  dmg:3,  speed:35,  xp:5,  drops:['Slime'] },
+    7: [{ name:'Frog',      emoji:'🐸', hp:15,  dmg:0,  speed:35,  xp:5,  drops:['Slime'], passive:true },
         { name:'Crocodile', emoji:'🐊', hp:60,  dmg:18, speed:35,  xp:25, drops:['Leather','Meat','Scales'] }],
     8: []
 };
 
+// Bosses — high HP, guarded by their fortress
 const BOSS_DEFS = {
-    1: { name:'Thundersheep',   emoji:'🐑', hp:200, dmg:20, speed:50,  xp:100, drops:['Golden Wool','Thunder Horn','Meat'], color:'#f1c40f' },
-    2: { name:'Ancient Treant',  emoji:'🌳', hp:350, dmg:25, speed:25,  xp:150, drops:['Ancient Wood','Heart of Forest','Amber'], color:'#2ecc71' },
-    3: { name:'Frost Mammoth',   emoji:'🦣', hp:500, dmg:35, speed:30,  xp:200, drops:['Mammoth Tusk','Frost Core','Thick Fur'], color:'#85c1e9' },
-    4: { name:'Stone Titan',     emoji:'🗿', hp:400, dmg:30, speed:20,  xp:180, drops:['Titan Ore','Crystal Heart','Gemstone'], color:'#808b96' },
-    5: { name:'Magma Wyrm',      emoji:'🐉', hp:600, dmg:40, speed:35,  xp:250, drops:['Obsidian Fang','Lava Core','Dragon Scale'], color:'#e74c3c' },
-    6: { name:'Sand Gila',       emoji:'🦎', hp:300, dmg:25, speed:45,  xp:160, drops:['Desert Crown','Sun Stone','Scales'], color:'#f39c12' },
-    7: { name:'Swamp Hydra',     emoji:'🐍', hp:450, dmg:30, speed:30,  xp:200, drops:['Hydra Fang','Swamp Crystal','Venom Sac'], color:'#27ae60' },
-    0: { name:'Leviathan',       emoji:'🐋', hp:700, dmg:45, speed:40,  xp:300, drops:['Leviathan Scale','Ocean Pearl','Trident Shard'], color:'#2e86c1' },
+    1: { name:'Thundersheep',   emoji:'🐑', hp:800,  dmg:25, speed:50,  xp:100, drops:['Golden Wool','Thunder Horn','Meat'], color:'#f1c40f', guardCount:6 },
+    2: { name:'Ancient Treant',  emoji:'🌳', hp:1200, dmg:30, speed:25,  xp:150, drops:['Ancient Wood','Heart of Forest','Amber'], color:'#2ecc71', guardCount:8 },
+    3: { name:'Frost Mammoth',   emoji:'🦣', hp:1800, dmg:40, speed:30,  xp:200, drops:['Mammoth Tusk','Frost Core','Thick Fur'], color:'#85c1e9', guardCount:10 },
+    4: { name:'Stone Titan',     emoji:'🗿', hp:1500, dmg:35, speed:20,  xp:180, drops:['Titan Ore','Crystal Heart','Gemstone'], color:'#808b96', guardCount:8 },
+    5: { name:'Magma Wyrm',      emoji:'🐉', hp:2500, dmg:50, speed:35,  xp:250, drops:['Obsidian Fang','Lava Core','Dragon Scale'], color:'#e74c3c', guardCount:12 },
+    6: { name:'Sand Gila',       emoji:'🦎', hp:1000, dmg:30, speed:45,  xp:160, drops:['Desert Crown','Sun Stone','Scales'], color:'#f39c12', guardCount:7 },
+    7: { name:'Swamp Hydra',     emoji:'🐍', hp:1600, dmg:35, speed:30,  xp:200, drops:['Hydra Fang','Swamp Crystal','Venom Sac'], color:'#27ae60', guardCount:9 },
+    0: { name:'Leviathan',       emoji:'🐋', hp:3000, dmg:55, speed:40,  xp:300, drops:['Leviathan Scale','Ocean Pearl','Trident Shard'], color:'#2e86c1', guardCount:10 },
 };
 
 // Items that spawn on the ground
@@ -390,58 +395,44 @@ const GROUND_ITEMS = {
 };
 
 const WEAPON_ITEMS = [
-    { name:'Wooden Club',    emoji:'🏏', atk:5,   desc:'Better than bare fists' },
-    { name:'Wooden Sword',   emoji:'🗡️', atk:10,  desc:'A crude but effective blade' },
-    { name:'Stone Axe',      emoji:'🪓', atk:15,  desc:'Chops foes and trees alike' },
-    { name:'Bone Spear',     emoji:'🦴', atk:18,  desc:'Sharpened from a beast\'s rib' },
-    { name:'Iron Blade',     emoji:'⚔️', atk:25,  desc:'Forged from mountain ore' },
-    { name:'Venom Dagger',   emoji:'🗡️', atk:22,  desc:'Coated in swamp toxin' },
-    { name:'Desert Scimitar', emoji:'⚔️', atk:28, desc:'Curved blade of the sands' },
-    { name:'Frost Blade',    emoji:'🔮', atk:35,  desc:'Infused with arctic chill' },
-    { name:'Volcanic Hammer', emoji:'🔨', atk:40, desc:'Forged in magma itself' },
-    { name:'Leviathan Trident',emoji:'🔱', atk:45, desc:'Pulled from the deep' },
-    { name:'Dragon Slayer',  emoji:'🗡️', atk:50,  desc:'Legendary weapon of old' },
-    { name:'Chaos Blade',    emoji:'⚔️', atk:60,  desc:'Forged from all boss souls' },
+    // Melee weapons
+    { name:'Wooden Club',    emoji:'🏏', atk:5,   desc:'Better than bare fists', range:50 },
+    { name:'Wooden Sword',   emoji:'🗡️', atk:10,  desc:'A crude but effective blade', range:50 },
+    { name:'Stone Axe',      emoji:'🪓', atk:15,  desc:'Chops foes and trees alike', range:50 },
+    { name:'Bone Spear',     emoji:'🦴', atk:18,  desc:'Sharpened from a beast\'s rib', range:60 },
+    { name:'Iron Blade',     emoji:'⚔️', atk:25,  desc:'Forged from mountain ore', range:50 },
+    { name:'Venom Dagger',   emoji:'🗡️', atk:22,  desc:'Coated in swamp toxin', range:45 },
+    { name:'Desert Scimitar', emoji:'⚔️', atk:28, desc:'Curved blade of the sands', range:55 },
+    { name:'Frost Blade',    emoji:'🔮', atk:35,  desc:'Infused with arctic chill', range:50 },
+    { name:'Volcanic Hammer', emoji:'🔨', atk:40, desc:'Forged in magma itself', range:55 },
+    { name:'Leviathan Trident',emoji:'🔱', atk:45, desc:'Pulled from the deep', range:60 },
+    { name:'Dragon Slayer',  emoji:'🗡️', atk:50,  desc:'Legendary weapon of old', range:55 },
+    { name:'Chaos Blade',    emoji:'⚔️', atk:60,  desc:'Forged from all boss souls', range:60 },
+    // Ranged weapons (guns)
+    { name:'Slingshot',      emoji:'🏹', atk:12,  desc:'Fires stones at range', range:180, isGun:true },
+    { name:'Crossbow',       emoji:'🏹', atk:20,  desc:'Precise bolt launcher', range:220, isGun:true },
+    { name:'Flintlock Pistol', emoji:'🔫', atk:30, desc:'Single shot, big impact', range:250, isGun:true },
+    { name:'Musket',         emoji:'🔫', atk:40,  desc:'Long range firepower', range:320, isGun:true },
+    { name:'Blunderbuss',    emoji:'🔫', atk:55,  desc:'Devastating spread shot', range:180, isGun:true },
+    { name:'Arcane Rifle',   emoji:'🔫', atk:70,  desc:'Magic-infused bullets', range:350, isGun:true },
+    { name:'Dragon Cannon',  emoji:'💥', atk:100, desc:'The ultimate weapon', range:300, isGun:true },
 ];
 
 // Mystery encounter zones ("???") — hidden boss encounters per biome
+// 4 legendary mystery bosses — harder than any regular boss, spread across the map
 const MYSTERY_ZONES = [
-    { x: 60,  y: 48,  biome: 1, name: 'Phantom Ram',      emoji: '🐏', hp: 250, dmg: 22, speed: 55, xp: 120,
-      drops: ['Phantom Wool','Spirit Horn','Enchanted Meat'], color: '#a78bfa',
-      desc: 'A spectral beast emerges from the mist...' },
-    { x: 140, y: 100, biome: 1, name: 'Harvest Golem',     emoji: '🌾', hp: 300, dmg: 18, speed: 25, xp: 130,
-      drops: ['Living Wheat','Golem Core','Golden Seeds'], color: '#84cc16',
-      desc: 'The earth itself rises to defend the plains!' },
-    { x: 220, y: 180, biome: 2, name: 'Shadow Stalker',    emoji: '🦇', hp: 280, dmg: 28, speed: 70, xp: 140,
-      drops: ['Shadow Cloak','Dark Fang','Night Essence'], color: '#6b21a8',
-      desc: 'Darkness coalesces into a terrifying form...' },
-    { x: 168, y: 128, biome: 2, name: 'Fungal Horror',     emoji: '🍄', hp: 320, dmg: 20, speed: 30, xp: 150,
-      drops: ['Spore Heart','Toxic Cap','Mycelium Core'], color: '#a3e635',
-      desc: 'Toxic spores fill the air as something massive stirs...' },
-    { x: 360, y: 32,  biome: 3, name: 'Blizzard Wraith',   emoji: '👻', hp: 350, dmg: 30, speed: 60, xp: 170,
-      drops: ['Frozen Soul','Blizzard Core','Ice Crown'], color: '#7dd3fc',
-      desc: 'The howling wind takes shape before you...' },
-    { x: 300, y: 72,  biome: 3, name: 'Yeti Alpha',        emoji: '🦍', hp: 400, dmg: 35, speed: 40, xp: 180,
-      drops: ['Yeti Fur','Primal Fang','Frost Gem'], color: '#e0f2fe',
-      desc: 'A massive shape emerges from the snowstorm!' },
-    { x: 420, y: 180, biome: 4, name: 'Crystal Basilisk',  emoji: '🐲', hp: 380, dmg: 28, speed: 35, xp: 160,
-      drops: ['Basilisk Eye','Crystal Scale','Petrified Heart'], color: '#c084fc',
-      desc: 'Crystalline eyes gleam from the mountain cave...' },
-    { x: 380, y: 220, biome: 5, name: 'Infernal Phoenix',  emoji: '🔥', hp: 500, dmg: 38, speed: 50, xp: 220,
-      drops: ['Phoenix Feather','Rebirth Flame','Ash Diamond'], color: '#fb923c',
-      desc: 'From the volcanic ash, wings of flame unfold!' },
-    { x: 240, y: 280, biome: 6, name: 'Dust Devil King',   emoji: '🌪️', hp: 340, dmg: 26, speed: 65, xp: 155,
-      drops: ['Storm Shard','Desert Wind','Djinn Lamp'], color: '#fbbf24',
-      desc: 'A whirlwind of sand reveals an ancient terror...' },
-    { x: 300, y: 240, biome: 6, name: 'Mummy Lord',        emoji: '🧟', hp: 360, dmg: 24, speed: 35, xp: 165,
-      drops: ['Ancient Bandage','Cursed Gold','Scarab Heart'], color: '#d4a053',
-      desc: 'Ancient wrappings stir from beneath the dunes...' },
-    { x: 100, y: 272, biome: 7, name: 'Bog Witch',         emoji: '🧙', hp: 300, dmg: 32, speed: 40, xp: 175,
-      drops: ['Witch Brew','Cursed Totem','Swamp Diamond'], color: '#4ade80',
-      desc: 'Eerie laughter echoes through the swamp...' },
-    { x: 32,  y: 160, biome: 0, name: 'Kraken Tentacle',   emoji: '🦑', hp: 450, dmg: 35, speed: 30, xp: 200,
-      drops: ['Kraken Ink','Tentacle Tip','Abyssal Pearl'], color: '#0ea5e9',
-      desc: 'The waters churn as something massive surfaces!' },
+    { x: 140, y: 100, biome: 1, name: 'Harvest Colossus',  emoji: '🌾', hp: 4000, dmg: 45, speed: 30, xp: 500,
+      drops: ['Living Wheat','Golem Core','Golden Seeds','Titan Soul Shard'], color: '#84cc16',
+      desc: 'The earth itself rises — a towering colossus of living grain!' },
+    { x: 360, y: 32,  biome: 3, name: 'Blizzard Wraith',   emoji: '👻', hp: 5000, dmg: 55, speed: 60, xp: 600,
+      drops: ['Frozen Soul','Blizzard Core','Ice Crown','Titan Soul Shard'], color: '#7dd3fc',
+      desc: 'The howling wind takes a terrible shape...' },
+    { x: 240, y: 280, biome: 6, name: 'Mummy Emperor',     emoji: '🧟', hp: 4500, dmg: 50, speed: 40, xp: 550,
+      drops: ['Pharaoh\'s Curse','Cursed Gold','Scarab Heart','Titan Soul Shard'], color: '#d4a053',
+      desc: 'An ancient king rises from beneath the sands...' },
+    { x: 100, y: 272, biome: 7, name: 'Bog Witch Queen',   emoji: '🧙', hp: 5500, dmg: 60, speed: 45, xp: 650,
+      drops: ['Witch Brew','Cursed Totem','Swamp Diamond','Titan Soul Shard'], color: '#4ade80',
+      desc: 'Eerie laughter echoes... the swamp itself turns against you!' },
 ];
 
 let mysteryZones = []; // Active mystery zones in the game
@@ -696,6 +687,27 @@ const MusicEngine = {
         gain.gain.setValueAtTime(0.15, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
         osc.start(t); osc.stop(t + 0.18);
+    },
+
+    sfxGunshot() {
+        if (!this.ctx || this.muted) return;
+        // White noise burst for gunshot
+        const bufferSize = this.ctx.sampleRate * 0.08;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass'; filter.frequency.value = 2000;
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.master);
+        const t = this.ctx.currentTime;
+        gain.gain.setValueAtTime(0.25, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        noise.start(t);
     },
 
     sfxPickup() {
@@ -1084,6 +1096,8 @@ function spawnCreatures() {
     for (const bs of bossSpawns) {
         const def = BOSS_DEFS[bs.biome];
         if (!def) continue;
+
+        // Spawn the boss
         creatures.push({
             x: bs.x * TILE + TILE/2,
             y: bs.y * TILE + TILE/2,
@@ -1099,6 +1113,38 @@ function spawnCreatures() {
             dead: false,
             bossColor: def.color,
         });
+
+        // Spawn elite guardian creatures around the boss (fortress defenders)
+        const guardDefs = CREATURE_DEFS[bs.biome];
+        const guardCount = def.guardCount || 6;
+        if (guardDefs && guardDefs.length > 0) {
+            for (let g = 0; g < guardCount; g++) {
+                const angle = (g / guardCount) * Math.PI * 2;
+                const radius = 80 + Math.random() * 60;
+                const gDef = guardDefs.find(d => !d.passive) || guardDefs[0];
+                creatures.push({
+                    x: bs.x * TILE + TILE/2 + Math.cos(angle) * radius,
+                    y: bs.y * TILE + TILE/2 + Math.sin(angle) * radius,
+                    name: 'Elite ' + gDef.name,
+                    emoji: gDef.emoji,
+                    hp: gDef.hp * 3,
+                    maxHp: gDef.hp * 3,
+                    dmg: gDef.dmg * 2,
+                    speed: gDef.speed * 1.2,
+                    xp: gDef.xp * 3,
+                    drops: gDef.drops,
+                    biome: bs.biome,
+                    ai: 'wander',
+                    targetX: 0, targetY: 0,
+                    moveTimer: 0,
+                    attackTimer: 0,
+                    isBoss: false,
+                    isElite: true,
+                    flashTimer: 0,
+                    dead: false,
+                });
+            }
+        }
     }
 }
 
@@ -1205,13 +1251,24 @@ function spawnGroundItems() {
         { x: 420 * TILE, y: 232 * TILE, idx: 8 },  // Volcanic Hammer in volcano
         { x: 24  * TILE, y: 180 * TILE, idx: 9 },  // Leviathan Trident near ocean
         { x: 420 * TILE, y: 260 * TILE, idx: 10 }, // Dragon Slayer deep in volcano
+        // Guns — scattered across dangerous biomes
+        { x: 160 * TILE, y: 150 * TILE, idx: 12 }, // Slingshot in forest edge
+        { x: 300 * TILE, y: 60  * TILE, idx: 13 }, // Crossbow in snow
+        { x: 100 * TILE, y: 240 * TILE, idx: 14 }, // Flintlock in swamp
+        { x: 360 * TILE, y: 155 * TILE, idx: 15 }, // Musket in mountains
+        { x: 260 * TILE, y: 260 * TILE, idx: 16 }, // Blunderbuss in desert
+        { x: 350 * TILE, y: 55  * TILE, idx: 17 }, // Arcane Rifle in snow/mountains
+        { x: 410 * TILE, y: 250 * TILE, idx: 18 }, // Dragon Cannon in volcano
     ];
     for (const ws of weaponSpots) {
         const w = WEAPON_ITEMS[ws.idx];
+        if (!w) continue;
         groundItems.push({
             x: ws.x, y: ws.y,
             name: w.name, emoji: w.emoji,
             isWeapon: true, atk: w.atk, desc: w.desc,
+            isGun: w.isGun || false,
+            range: w.range || 50,
             collected: false,
         });
     }
@@ -1322,10 +1379,12 @@ function tryDash() {
 
 function tryAttack() {
     if (player.attackCooldown > 0) return;
-    player.attackCooldown = 0.4;
 
-    // Find nearest creature in range
-    const range = 50;
+    const isGun = player.equippedWeapon && player.equippedWeapon.isGun;
+    player.attackCooldown = isGun ? 0.6 : 0.4; // Guns slightly slower
+
+    // Attack range depends on weapon type
+    const range = player.equippedWeapon ? (player.equippedWeapon.range || 50) : 50;
     let nearest = null, nearestDist = range;
     for (const c of creatures) {
         if (c.dead) continue;
@@ -1342,16 +1401,42 @@ function tryAttack() {
         // Damage number
         damageNumbers.push({
             x: nearest.x, y: nearest.y - 10,
-            text: `-${actualDmg}`, color: '#e74c3c',
+            text: `-${actualDmg}`, color: isGun ? '#fbbf24' : '#e74c3c',
             timer: 1.0
         });
 
-        // Knockback
-        const angle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
-        nearest.x += Math.cos(angle) * 8;
-        nearest.y += Math.sin(angle) * 8;
+        // Gun projectile trail
+        if (isGun) {
+            const steps = 8;
+            for (let i = 0; i < steps; i++) {
+                const t = i / steps;
+                particles.push({
+                    x: lerp(player.x, nearest.x, t) + randFloat(-3, 3),
+                    y: lerp(player.y, nearest.y, t) + randFloat(-3, 3),
+                    vx: randFloat(-10, 10), vy: randFloat(-10, 10),
+                    life: 0.3, maxLife: 0.3,
+                    color: '#fbbf24', size: randFloat(1.5, 3),
+                });
+            }
+            // Muzzle flash
+            for (let i = 0; i < 6; i++) {
+                const a = player.facing + randFloat(-0.5, 0.5);
+                particles.push({
+                    x: player.x + Math.cos(player.facing) * 15,
+                    y: player.y + Math.sin(player.facing) * 15,
+                    vx: Math.cos(a) * 100, vy: Math.sin(a) * 100,
+                    life: 0.15, maxLife: 0.15,
+                    color: '#ff8c00', size: randFloat(2, 5),
+                });
+            }
+        }
 
-        // Particles
+        // Knockback (more for guns)
+        const angle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
+        nearest.x += Math.cos(angle) * (isGun ? 15 : 8);
+        nearest.y += Math.sin(angle) * (isGun ? 15 : 8);
+
+        // Impact particles
         for (let i = 0; i < 5; i++) {
             particles.push({
                 x: nearest.x, y: nearest.y,
@@ -1362,7 +1447,7 @@ function tryAttack() {
             });
         }
 
-        addLog(`Hit ${nearest.name} for ${actualDmg} damage!`, 'damage');
+        addLog(`${isGun ? '🔫 Shot' : 'Hit'} ${nearest.name} for ${actualDmg} damage!`, 'damage');
         MusicEngine.sfxHit();
 
         if (nearest.hp <= 0) {
@@ -1370,7 +1455,7 @@ function tryAttack() {
         }
     }
 
-    MusicEngine.sfxAttack();
+    if (isGun) { MusicEngine.sfxGunshot(); } else { MusicEngine.sfxAttack(); }
     // Attack visual (swing arc)
     const angle = Math.atan2(mouse.worldY - player.y, mouse.worldX - player.x);
     for (let i = 0; i < 3; i++) {
@@ -1645,6 +1730,22 @@ function updateCreature(c, dt) {
     const d = dist(player.x, player.y, c.x, c.y);
     const aggroRange = c.isBoss ? 160 : 100;
 
+    // Passive creatures flee from player instead of attacking
+    if (c.passive && d < aggroRange) {
+        c.ai = 'flee';
+        const angle = Math.atan2(c.y - player.y, c.x - player.x); // away from player
+        const newX = c.x + Math.cos(angle) * c.speed * 1.2 * dt;
+        const newY = c.y + Math.sin(angle) * c.speed * 1.2 * dt;
+        if (isInHomeBiome(c, newX, newY)) {
+            c.x = newX;
+            c.y = newY;
+        }
+        c.x = clamp(c.x, TILE * 5, (MAP_W - 5) * TILE);
+        c.y = clamp(c.y, TILE * 5, (MAP_H - 5) * TILE);
+        c.flashTimer = Math.max(0, c.flashTimer - dt);
+        return; // Passive creatures never attack
+    }
+
     if (d < aggroRange && fogMap[Math.floor(c.y/TILE)]?.[Math.floor(c.x/TILE)] === 2) {
         // Chase player
         c.ai = 'chase';
@@ -1723,8 +1824,8 @@ function pickupItem(item) {
     if (item.thirst) player.thirst = Math.min(player.maxThirst, player.thirst + item.thirst);
 
     if (item.isWeapon) {
-        player.equippedWeapon = { name: item.name, emoji: item.emoji, atk: item.atk, desc: item.desc };
-        addLog(`Equipped ${item.name}! (+${item.atk} ATK)`, 'item');
+        player.equippedWeapon = { name: item.name, emoji: item.emoji, atk: item.atk, desc: item.desc, isGun: item.isGun || false, range: item.range || 50 };
+        addLog(`Equipped ${item.name}! (+${item.atk} ATK${item.isGun ? ', RANGED' : ''})`, 'item');
         document.getElementById('atkVal').textContent = player.atk + item.atk;
         MusicEngine.sfxWeapon();
     } else {
