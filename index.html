@@ -92,6 +92,14 @@
             display: none;
         }
         #inventoryPanel.open { display: block; }
+        #invCloseBtn {
+            position: absolute; top: 12px; right: 14px;
+            background: none; border: 1px solid rgba(224,213,160,0.3);
+            color: #e0d5a0; font-size: 18px; width: 32px; height: 32px;
+            border-radius: 50%; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        #invCloseBtn:hover { background: rgba(224,213,160,0.15); border-color: #e0d5a0; }
         #inventoryPanel h2 {
             color: #e0d5a0; font-size: 18px; letter-spacing: 3px;
             text-align: center; margin-bottom: 16px; text-transform: uppercase;
@@ -274,6 +282,7 @@
 
     <!-- Inventory Panel -->
     <div id="inventoryPanel">
+        <button id="invCloseBtn" onclick="toggleInventory()">✕</button>
         <h2>📦 Inventory</h2>
         <div class="inv-grid" id="invGrid"></div>
     </div>
