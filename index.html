@@ -311,9 +311,9 @@
 // CONFIGURATION & CONSTANTS
 // ============================================================
 const TILE = 32;
-const MAP_W = 120;
-const MAP_H = 80;
-const VISION_RADIUS = 8;
+const MAP_W = 480;
+const MAP_H = 320;
+const VISION_RADIUS = 10;
 const PLAYER_SPEED = 120; // pixels per second
 const DASH_SPEED = 300;
 const DASH_DURATION = 0.2;
@@ -406,40 +406,40 @@ const WEAPON_ITEMS = [
 
 // Mystery encounter zones ("???") — hidden boss encounters per biome
 const MYSTERY_ZONES = [
-    { x: 15, y: 12, biome: 1, name: 'Phantom Ram',      emoji: '🐏', hp: 250, dmg: 22, speed: 55, xp: 120,
+    { x: 60,  y: 48,  biome: 1, name: 'Phantom Ram',      emoji: '🐏', hp: 250, dmg: 22, speed: 55, xp: 120,
       drops: ['Phantom Wool','Spirit Horn','Enchanted Meat'], color: '#a78bfa',
       desc: 'A spectral beast emerges from the mist...' },
-    { x: 35, y: 25, biome: 1, name: 'Harvest Golem',     emoji: '🌾', hp: 300, dmg: 18, speed: 25, xp: 130,
+    { x: 140, y: 100, biome: 1, name: 'Harvest Golem',     emoji: '🌾', hp: 300, dmg: 18, speed: 25, xp: 130,
       drops: ['Living Wheat','Golem Core','Golden Seeds'], color: '#84cc16',
       desc: 'The earth itself rises to defend the plains!' },
-    { x: 55, y: 45, biome: 2, name: 'Shadow Stalker',    emoji: '🦇', hp: 280, dmg: 28, speed: 70, xp: 140,
+    { x: 220, y: 180, biome: 2, name: 'Shadow Stalker',    emoji: '🦇', hp: 280, dmg: 28, speed: 70, xp: 140,
       drops: ['Shadow Cloak','Dark Fang','Night Essence'], color: '#6b21a8',
       desc: 'Darkness coalesces into a terrifying form...' },
-    { x: 42, y: 32, biome: 2, name: 'Fungal Horror',     emoji: '🍄', hp: 320, dmg: 20, speed: 30, xp: 150,
+    { x: 168, y: 128, biome: 2, name: 'Fungal Horror',     emoji: '🍄', hp: 320, dmg: 20, speed: 30, xp: 150,
       drops: ['Spore Heart','Toxic Cap','Mycelium Core'], color: '#a3e635',
       desc: 'Toxic spores fill the air as something massive stirs...' },
-    { x: 90, y: 8,  biome: 3, name: 'Blizzard Wraith',   emoji: '👻', hp: 350, dmg: 30, speed: 60, xp: 170,
+    { x: 360, y: 32,  biome: 3, name: 'Blizzard Wraith',   emoji: '👻', hp: 350, dmg: 30, speed: 60, xp: 170,
       drops: ['Frozen Soul','Blizzard Core','Ice Crown'], color: '#7dd3fc',
       desc: 'The howling wind takes shape before you...' },
-    { x: 75, y: 18, biome: 3, name: 'Yeti Alpha',        emoji: '🦍', hp: 400, dmg: 35, speed: 40, xp: 180,
+    { x: 300, y: 72,  biome: 3, name: 'Yeti Alpha',        emoji: '🦍', hp: 400, dmg: 35, speed: 40, xp: 180,
       drops: ['Yeti Fur','Primal Fang','Frost Gem'], color: '#e0f2fe',
       desc: 'A massive shape emerges from the snowstorm!' },
-    { x: 105, y: 45, biome: 4, name: 'Crystal Basilisk', emoji: '🐲', hp: 380, dmg: 28, speed: 35, xp: 160,
+    { x: 420, y: 180, biome: 4, name: 'Crystal Basilisk',  emoji: '🐲', hp: 380, dmg: 28, speed: 35, xp: 160,
       drops: ['Basilisk Eye','Crystal Scale','Petrified Heart'], color: '#c084fc',
       desc: 'Crystalline eyes gleam from the mountain cave...' },
-    { x: 95, y: 55, biome: 5, name: 'Infernal Phoenix',  emoji: '🔥', hp: 500, dmg: 38, speed: 50, xp: 220,
+    { x: 380, y: 220, biome: 5, name: 'Infernal Phoenix',  emoji: '🔥', hp: 500, dmg: 38, speed: 50, xp: 220,
       drops: ['Phoenix Feather','Rebirth Flame','Ash Diamond'], color: '#fb923c',
       desc: 'From the volcanic ash, wings of flame unfold!' },
-    { x: 60, y: 70, biome: 6, name: 'Dust Devil King',   emoji: '🌪️', hp: 340, dmg: 26, speed: 65, xp: 155,
+    { x: 240, y: 280, biome: 6, name: 'Dust Devil King',   emoji: '🌪️', hp: 340, dmg: 26, speed: 65, xp: 155,
       drops: ['Storm Shard','Desert Wind','Djinn Lamp'], color: '#fbbf24',
       desc: 'A whirlwind of sand reveals an ancient terror...' },
-    { x: 75, y: 60, biome: 6, name: 'Mummy Lord',        emoji: '🧟', hp: 360, dmg: 24, speed: 35, xp: 165,
+    { x: 300, y: 240, biome: 6, name: 'Mummy Lord',        emoji: '🧟', hp: 360, dmg: 24, speed: 35, xp: 165,
       drops: ['Ancient Bandage','Cursed Gold','Scarab Heart'], color: '#d4a053',
       desc: 'Ancient wrappings stir from beneath the dunes...' },
-    { x: 25, y: 68, biome: 7, name: 'Bog Witch',         emoji: '🧙', hp: 300, dmg: 32, speed: 40, xp: 175,
+    { x: 100, y: 272, biome: 7, name: 'Bog Witch',         emoji: '🧙', hp: 300, dmg: 32, speed: 40, xp: 175,
       drops: ['Witch Brew','Cursed Totem','Swamp Diamond'], color: '#4ade80',
       desc: 'Eerie laughter echoes through the swamp...' },
-    { x: 8,  y: 40, biome: 0, name: 'Kraken Tentacle',   emoji: '🦑', hp: 450, dmg: 35, speed: 30, xp: 200,
+    { x: 32,  y: 160, biome: 0, name: 'Kraken Tentacle',   emoji: '🦑', hp: 450, dmg: 35, speed: 30, xp: 200,
       drops: ['Kraken Ink','Tentacle Tip','Abyssal Pearl'], color: '#0ea5e9',
       desc: 'The waters churn as something massive surfaces!' },
 ];
@@ -805,28 +805,28 @@ let fogMap = [];
 
 // Biome regions (centers and approximate radii matching the hand-drawn map)
 const BIOME_SEEDS = [
-    { type: BIOMES.PLAINS,    cx: 22, cy: 18, weight: 1.0 },
-    { type: BIOMES.SNOW,      cx: 82, cy: 14, weight: 1.0 },
-    { type: BIOMES.SNOW,      cx: 100,cy: 10, weight: 0.8 },
-    { type: BIOMES.FOREST,    cx: 48, cy: 42, weight: 1.0 },
-    { type: BIOMES.FOREST,    cx: 40, cy: 35, weight: 0.7 },
-    { type: BIOMES.MOUNTAINS, cx: 98, cy: 38, weight: 1.0 },
-    { type: BIOMES.MOUNTAINS, cx: 88, cy: 32, weight: 0.7 },
-    { type: BIOMES.VOLCANO,   cx: 102,cy: 62, weight: 1.0 },
-    { type: BIOMES.DESERT,    cx: 68, cy: 64, weight: 1.0 },
-    { type: BIOMES.DESERT,    cx: 78, cy: 68, weight: 0.7 },
-    { type: BIOMES.SWAMP,     cx: 30, cy: 62, weight: 1.0 },
-    { type: BIOMES.SWAMP,     cx: 22, cy: 58, weight: 0.6 },
-    { type: BIOMES.OCEAN,     cx: 4,  cy: 50, weight: 1.2 },
-    { type: BIOMES.OCEAN,     cx: 2,  cy: 30, weight: 0.8 },
-    { type: BIOMES.OCEAN,     cx: 8,  cy: 70, weight: 0.6 },
+    { type: BIOMES.PLAINS,    cx: 88,  cy: 72,  weight: 1.0 },
+    { type: BIOMES.SNOW,      cx: 328, cy: 56,  weight: 1.0 },
+    { type: BIOMES.SNOW,      cx: 400, cy: 40,  weight: 0.8 },
+    { type: BIOMES.FOREST,    cx: 192, cy: 168, weight: 1.0 },
+    { type: BIOMES.FOREST,    cx: 160, cy: 140, weight: 0.7 },
+    { type: BIOMES.MOUNTAINS, cx: 392, cy: 152, weight: 1.0 },
+    { type: BIOMES.MOUNTAINS, cx: 352, cy: 128, weight: 0.7 },
+    { type: BIOMES.VOLCANO,   cx: 408, cy: 248, weight: 1.0 },
+    { type: BIOMES.DESERT,    cx: 272, cy: 256, weight: 1.0 },
+    { type: BIOMES.DESERT,    cx: 312, cy: 272, weight: 0.7 },
+    { type: BIOMES.SWAMP,     cx: 120, cy: 248, weight: 1.0 },
+    { type: BIOMES.SWAMP,     cx: 88,  cy: 232, weight: 0.6 },
+    { type: BIOMES.OCEAN,     cx: 16,  cy: 200, weight: 1.2 },
+    { type: BIOMES.OCEAN,     cx: 8,   cy: 120, weight: 0.8 },
+    { type: BIOMES.OCEAN,     cx: 32,  cy: 280, weight: 0.6 },
 ];
 
 // River path as a series of waypoints
 const RIVER_PATH = [
-    {x:75, y:3}, {x:72, y:10}, {x:65, y:18}, {x:58, y:25},
-    {x:52, y:32}, {x:48, y:38}, {x:45, y:44}, {x:42, y:50},
-    {x:38, y:55}, {x:34, y:60}, {x:28, y:65}, {x:20, y:72}, {x:14, y:76}
+    {x:300, y:12}, {x:288, y:40}, {x:260, y:72}, {x:232, y:100},
+    {x:208, y:128}, {x:192, y:152}, {x:180, y:176}, {x:168, y:200},
+    {x:152, y:220}, {x:136, y:240}, {x:112, y:260}, {x:80, y:288}, {x:56, y:304}
 ];
 
 function distToRiver(tx, ty) {
@@ -856,27 +856,27 @@ function generateMap() {
         for (let x = 0; x < MAP_W; x++) {
             fogMap[y][x] = 0; // hidden
 
-            // Check river first
+            // Check river first (wider river for larger map)
             const rd = distToRiver(x, y);
-            const riverNoise = fbm(x * 0.1, y * 0.1, 3) * 1.5;
-            if (rd < 1.5 + riverNoise * 0.8) {
+            const riverNoise = fbm(x * 0.03, y * 0.03, 3) * 2.5;
+            if (rd < 5 + riverNoise * 2.5) {
                 mapTiles[y][x] = BIOMES.RIVER;
                 mapDecorations[y][x] = generateDecoration(BIOMES.RIVER, x, y);
                 continue;
             }
 
             // Ocean borders
-            if (x <= 1 || y <= 1 || x >= MAP_W - 2 || y >= MAP_H - 2) {
+            if (x <= 4 || y <= 4 || x >= MAP_W - 5 || y >= MAP_H - 5) {
                 mapTiles[y][x] = BIOMES.OCEAN;
                 mapDecorations[y][x] = generateDecoration(BIOMES.OCEAN, x, y);
                 continue;
             }
 
-            // Find nearest biome seed with noise
+            // Find nearest biome seed with noise (scaled amplitude for larger map)
             let bestBiome = BIOMES.PLAINS;
             let bestDist = Infinity;
-            const nx = fbm(x * 0.05 + 100, y * 0.05, 4) * 12;
-            const ny = fbm(x * 0.05, y * 0.05 + 100, 4) * 12;
+            const nx = fbm(x * 0.015 + 100, y * 0.015, 4) * 45;
+            const ny = fbm(x * 0.015, y * 0.015 + 100, 4) * 45;
 
             for (const seed of BIOME_SEEDS) {
                 const d = dist(x + nx, y + ny, seed.cx, seed.cy) / seed.weight;
@@ -888,8 +888,8 @@ function generateMap() {
 
             // Make ocean coastline more natural
             if (bestBiome === BIOMES.OCEAN) {
-                const coastNoise = fbm(x * 0.08, y * 0.08, 3);
-                if (x > 10 + coastNoise * 8) {
+                const coastNoise = fbm(x * 0.02, y * 0.02, 3);
+                if (x > 40 + coastNoise * 30) {
                     // Too far inland for ocean, revert to nearest land biome
                     let bestLand = BIOMES.PLAINS;
                     let bestLandDist = Infinity;
@@ -908,12 +908,12 @@ function generateMap() {
     }
 
     // Add shallow ocean tiles near coast
-    for (let y = 2; y < MAP_H - 2; y++) {
-        for (let x = 2; x < MAP_W - 2; x++) {
+    for (let y = 5; y < MAP_H - 5; y++) {
+        for (let x = 5; x < MAP_W - 5; x++) {
             if (mapTiles[y][x] === BIOMES.OCEAN) {
                 let hasLand = false;
-                for (let dy = -2; dy <= 2; dy++) {
-                    for (let dx = -2; dx <= 2; dx++) {
+                for (let dy = -6; dy <= 6; dy++) {
+                    for (let dx = -6; dx <= 6; dx++) {
                         const ny2 = y+dy, nx2 = x+dx;
                         if (ny2>=0 && ny2<MAP_H && nx2>=0 && nx2<MAP_W) {
                             if (mapTiles[ny2][nx2] !== BIOMES.OCEAN && mapTiles[ny2][nx2] !== BIOMES.RIVER) {
@@ -1000,7 +1000,7 @@ let mouse = { x: 0, y: 0, worldX: 0, worldY: 0, down: false };
 
 // Player state
 let player = {
-    x: 48 * TILE, y: 42 * TILE,
+    x: 192 * TILE, y: 168 * TILE,
     w: 20, h: 20,
     health: 100, maxHealth: 100,
     hunger: 100, maxHunger: 100,
@@ -1018,6 +1018,7 @@ let player = {
     inventory: [],
     equippedWeapon: null,
     bossesDefeated: 0,
+    lastDamageCause: '',
 };
 
 let creatures = [];
@@ -1040,14 +1041,14 @@ function spawnCreatures() {
 
         // Find tiles of this biome
         const biomeTiles = [];
-        for (let y = 3; y < MAP_H - 3; y++) {
-            for (let x = 3; x < MAP_W - 3; x++) {
+        for (let y = 10; y < MAP_H - 10; y++) {
+            for (let x = 10; x < MAP_W - 10; x++) {
                 if (mapTiles[y][x] === biome) biomeTiles.push({x, y});
             }
         }
 
-        // Spawn creatures
-        const count = Math.min(Math.floor(biomeTiles.length / 25), 20);
+        // Spawn creatures (scaled for larger map)
+        const count = Math.min(Math.floor(biomeTiles.length / 30), 200);
         for (let i = 0; i < count; i++) {
             const tile = biomeTiles[randInt(0, biomeTiles.length - 1)];
             const def = defs[randInt(0, defs.length - 1)];
@@ -1070,14 +1071,14 @@ function spawnCreatures() {
 
     // Spawn bosses (one per biome region)
     const bossSpawns = [
-        { biome: 0, x: 6,  y: 50 },  // Ocean boss
-        { biome: 1, x: 22, y: 18 },  // Plains boss
-        { biome: 2, x: 50, y: 42 },  // Forest boss
-        { biome: 3, x: 85, y: 12 },  // Snow boss
-        { biome: 4, x: 98, y: 38 },  // Mountain boss
-        { biome: 5, x: 102,y: 62 },  // Volcano boss
-        { biome: 6, x: 70, y: 64 },  // Desert boss
-        { biome: 7, x: 30, y: 62 },  // Swamp boss
+        { biome: 0, x: 24,  y: 200 },  // Ocean boss
+        { biome: 1, x: 88,  y: 72 },   // Plains boss
+        { biome: 2, x: 200, y: 168 },  // Forest boss
+        { biome: 3, x: 340, y: 48 },   // Snow boss
+        { biome: 4, x: 392, y: 152 },  // Mountain boss
+        { biome: 5, x: 408, y: 248 },  // Volcano boss
+        { biome: 6, x: 280, y: 256 },  // Desert boss
+        { biome: 7, x: 120, y: 248 },  // Swamp boss
     ];
 
     for (const bs of bossSpawns) {
@@ -1172,13 +1173,13 @@ function spawnGroundItems() {
         if (!items || items.length === 0) continue;
 
         const biomeTiles = [];
-        for (let y = 3; y < MAP_H - 3; y++) {
-            for (let x = 3; x < MAP_W - 3; x++) {
+        for (let y = 10; y < MAP_H - 10; y++) {
+            for (let x = 10; x < MAP_W - 10; x++) {
                 if (mapTiles[y][x] === biome) biomeTiles.push({x, y});
             }
         }
 
-        const count = Math.min(Math.floor(biomeTiles.length / 15), 30);
+        const count = Math.min(Math.floor(biomeTiles.length / 20), 300);
         for (let i = 0; i < count; i++) {
             const tile = biomeTiles[randInt(0, biomeTiles.length - 1)];
             const item = items[randInt(0, items.length - 1)];
@@ -1193,17 +1194,17 @@ function spawnGroundItems() {
 
     // Spawn weapons across all biomes — better weapons in harder regions
     const weaponSpots = [
-        { x: 48 * TILE, y: 40 * TILE, idx: 0 },  // Wooden Club in forest (starter area)
-        { x: 45 * TILE, y: 38 * TILE, idx: 1 },  // Wooden Sword in forest
-        { x: 20 * TILE, y: 20 * TILE, idx: 2 },  // Stone Axe in plains
-        { x: 28 * TILE, y: 60 * TILE, idx: 3 },  // Bone Spear in swamp
-        { x: 90 * TILE, y: 35 * TILE, idx: 4 },  // Iron Blade in mountains
-        { x: 32 * TILE, y: 65 * TILE, idx: 5 },  // Venom Dagger in deep swamp
-        { x: 72 * TILE, y: 68 * TILE, idx: 6 },  // Desert Scimitar in desert
-        { x: 80 * TILE, y: 10 * TILE, idx: 7 },  // Frost Blade in snow
-        { x: 105* TILE, y: 58 * TILE, idx: 8 },  // Volcanic Hammer in volcano
-        { x: 6  * TILE, y: 45 * TILE, idx: 9 },  // Leviathan Trident near ocean
-        { x: 105* TILE, y: 65 * TILE, idx: 10 }, // Dragon Slayer deep in volcano
+        { x: 192 * TILE, y: 160 * TILE, idx: 0 },  // Wooden Club in forest (starter area)
+        { x: 180 * TILE, y: 152 * TILE, idx: 1 },  // Wooden Sword in forest
+        { x: 80  * TILE, y: 80  * TILE, idx: 2 },   // Stone Axe in plains
+        { x: 112 * TILE, y: 240 * TILE, idx: 3 },  // Bone Spear in swamp
+        { x: 360 * TILE, y: 140 * TILE, idx: 4 },  // Iron Blade in mountains
+        { x: 128 * TILE, y: 260 * TILE, idx: 5 },  // Venom Dagger in deep swamp
+        { x: 288 * TILE, y: 272 * TILE, idx: 6 },  // Desert Scimitar in desert
+        { x: 320 * TILE, y: 40  * TILE, idx: 7 },  // Frost Blade in snow
+        { x: 420 * TILE, y: 232 * TILE, idx: 8 },  // Volcanic Hammer in volcano
+        { x: 24  * TILE, y: 180 * TILE, idx: 9 },  // Leviathan Trident near ocean
+        { x: 420 * TILE, y: 260 * TILE, idx: 10 }, // Dragon Slayer deep in volcano
     ];
     for (const ws of weaponSpots) {
         const w = WEAPON_ITEMS[ws.idx];
@@ -1231,23 +1232,29 @@ function updateFog() {
         }
     }
 
-    // Set tiles in vision radius to visible
+    // Set tiles in vision radius to visible, track explore count
     for (let y = Math.max(0, pty - r); y <= Math.min(MAP_H - 1, pty + r); y++) {
         for (let x = Math.max(0, ptx - r); x <= Math.min(MAP_W - 1, ptx + r); x++) {
             const d = dist(ptx, pty, x, y);
             if (d <= r) {
+                if (fogMap[y][x] === 0) exploredCount++; // newly discovered
                 fogMap[y][x] = 2; // visible
             }
         }
     }
 }
 
+let exploredCount = 0;
+let cachedExplorePercent = '0.0';
+let exploreCalcFrame = 0;
+
 function getExplorePercent() {
-    let explored = 0, total = MAP_W * MAP_H;
-    for (let y = 0; y < MAP_H; y++)
-        for (let x = 0; x < MAP_W; x++)
-            if (fogMap[y][x] > 0) explored++;
-    return ((explored / total) * 100).toFixed(1);
+    // Only recalculate every 60 frames for performance on large maps
+    exploreCalcFrame++;
+    if (exploreCalcFrame % 60 === 0) {
+        cachedExplorePercent = ((exploredCount / (MAP_W * MAP_H)) * 100).toFixed(1);
+    }
+    return cachedExplorePercent;
 }
 
 // ============================================================
@@ -1531,13 +1538,14 @@ function update(dt) {
         player.warmth = Math.max(0, player.warmth - 3 * dt);
     } else if (currentBiome === BIOMES.VOLCANO) {
         player.warmth = Math.min(100, player.warmth + 2 * dt);
-        if (player.warmth > 90) player.health -= 2 * dt; // overheating
+        if (player.warmth > 90) { player.health -= 2 * dt; player.lastDamageCause = 'Burned alive by volcanic heat'; }
     } else if (currentBiome === BIOMES.DESERT) {
         player.thirst = Math.max(0, player.thirst - 2 * dt); // extra thirst
         player.warmth = Math.min(100, player.warmth + 1 * dt);
     } else if (currentBiome === BIOMES.SWAMP) {
         if (Math.random() < 0.002) { // Poison chance
             player.health -= 3;
+            player.lastDamageCause = 'Poisoned by toxic swamp gases';
             addLog('The swamp air poisons you!', 'damage');
         }
     } else {
@@ -1545,10 +1553,10 @@ function update(dt) {
         player.warmth = Math.min(100, player.warmth + 1.5 * dt);
     }
 
-    // Stat consequences
-    if (player.hunger <= 0) player.health -= 3 * dt;
-    if (player.thirst <= 0) player.health -= 4 * dt;
-    if (player.warmth <= 10) player.health -= 2 * dt;
+    // Stat consequences (track death cause)
+    if (player.hunger <= 0) { player.health -= 3 * dt; player.lastDamageCause = 'Starved to death — hunger reached zero'; }
+    if (player.thirst <= 0) { player.health -= 4 * dt; player.lastDamageCause = 'Died of dehydration — thirst reached zero'; }
+    if (player.warmth <= 10) { player.health -= 2 * dt; player.lastDamageCause = 'Froze to death in the cold'; }
 
     // Slow health regen if well-fed
     if (player.hunger > 50 && player.thirst > 50 && player.health < player.maxHealth) {
@@ -1625,24 +1633,39 @@ function update(dt) {
     updateMouseWorld();
 }
 
+function isInHomeBiome(c, px, py) {
+    const tx = clamp(Math.floor(px / TILE), 0, MAP_W - 1);
+    const ty = clamp(Math.floor(py / TILE), 0, MAP_H - 1);
+    const tileBiome = mapTiles[ty][tx];
+    // Allow creatures to walk on river tiles too (crossing)
+    return tileBiome === c.biome || tileBiome === BIOMES.RIVER;
+}
+
 function updateCreature(c, dt) {
     const d = dist(player.x, player.y, c.x, c.y);
-    const aggroRange = c.isBoss ? 120 : 80;
+    const aggroRange = c.isBoss ? 160 : 100;
 
     if (d < aggroRange && fogMap[Math.floor(c.y/TILE)]?.[Math.floor(c.x/TILE)] === 2) {
         // Chase player
         c.ai = 'chase';
         const angle = Math.atan2(player.y - c.y, player.x - c.x);
-        c.x += Math.cos(angle) * c.speed * dt;
-        c.y += Math.sin(angle) * c.speed * dt;
+        const newX = c.x + Math.cos(angle) * c.speed * dt;
+        const newY = c.y + Math.sin(angle) * c.speed * dt;
+
+        // Only move if staying in home biome (or chasing into adjacent tiles)
+        if (isInHomeBiome(c, newX, newY)) {
+            c.x = newX;
+            c.y = newY;
+        }
 
         // Attack player
-        if (d < 25) {
+        if (d < 30) {
             c.attackTimer -= dt;
             if (c.attackTimer <= 0) {
                 if (player.invincibleTimer <= 0 && !player.dashing) {
                     const dmg = c.dmg + randInt(-2, 2);
                     player.health -= dmg;
+                    player.lastDamageCause = `Killed by ${c.name}${c.isBoss ? ' (Boss)' : ''} in the ${BIOME_NAMES[c.biome]}`;
                     player.invincibleTimer = 0.5;
                     damageNumbers.push({
                         x: player.x, y: player.y - 10,
@@ -1659,22 +1682,33 @@ function updateCreature(c, dt) {
             }
         }
     } else {
-        // Wander
+        // Wander within home biome
         c.ai = 'wander';
         c.moveTimer -= dt;
         if (c.moveTimer <= 0) {
-            c.targetX = c.x + randFloat(-60, 60);
-            c.targetY = c.y + randFloat(-60, 60);
+            c.targetX = c.x + randFloat(-100, 100);
+            c.targetY = c.y + randFloat(-100, 100);
             c.moveTimer = randFloat(2, 5);
         }
         const angle = Math.atan2(c.targetY - c.y, c.targetX - c.x);
         const wanderSpeed = c.speed * 0.3;
-        c.x += Math.cos(angle) * wanderSpeed * dt;
-        c.y += Math.sin(angle) * wanderSpeed * dt;
+        const newX = c.x + Math.cos(angle) * wanderSpeed * dt;
+        const newY = c.y + Math.sin(angle) * wanderSpeed * dt;
+
+        // Only move if staying in home biome
+        if (isInHomeBiome(c, newX, newY)) {
+            c.x = newX;
+            c.y = newY;
+        } else {
+            // Reverse direction — pick a new target back toward biome center
+            c.targetX = c.x + randFloat(-80, 80);
+            c.targetY = c.y + randFloat(-80, 80);
+            c.moveTimer = 0.5;
+        }
 
         // Keep in map bounds
-        c.x = clamp(c.x, TILE * 2, (MAP_W - 2) * TILE);
-        c.y = clamp(c.y, TILE * 2, (MAP_H - 2) * TILE);
+        c.x = clamp(c.x, TILE * 5, (MAP_W - 5) * TILE);
+        c.y = clamp(c.y, TILE * 5, (MAP_H - 5) * TILE);
     }
 
     c.flashTimer = Math.max(0, c.flashTimer - dt);
@@ -2485,20 +2519,15 @@ function startGame() {
 function showDeathScreen() {
     gamePaused = true;
     MusicEngine.sfxDeath();
-    const causes = [
-        'The wilderness claimed another soul...',
-        'Your journey ends here...',
-        'The fog swallows you whole...',
-        'Nature is unforgiving...',
-    ];
-    document.getElementById('deathCause').textContent = causes[randInt(0, causes.length-1)];
+    const reason = player.lastDamageCause || 'The wilderness claimed another soul...';
+    document.getElementById('deathCause').textContent = reason;
     document.getElementById('deathScreen').classList.add('show');
 }
 
 function restartGame() {
     document.getElementById('deathScreen').classList.remove('show');
 
-    player.x = 48 * TILE; player.y = 42 * TILE;
+    player.x = 192 * TILE; player.y = 168 * TILE;
     player.health = player.maxHealth;
     player.hunger = player.maxHunger;
     player.thirst = player.maxThirst;
@@ -2524,6 +2553,8 @@ function restartGame() {
 
     particles = [];
     damageNumbers = [];
+    exploredCount = 0;
+    cachedExplorePercent = '0.0';
     gamePaused = false;
 
     addLog('A new expedition begins...', 'info');
