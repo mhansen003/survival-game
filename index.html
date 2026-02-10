@@ -175,13 +175,15 @@
 
         /* ─── Tooltip ─── */
         #tooltip {
-            position: fixed; z-index: 70; padding: 8px 12px;
-            background: rgba(10,10,20,0.95); border: 1px solid rgba(224,213,160,0.4);
-            border-radius: 6px; color: #ccc; font-size: 12px;
-            pointer-events: none; display: none; max-width: 200px;
+            position: fixed; z-index: 70; padding: 10px 14px;
+            background: rgba(10,10,20,0.97); border: 1px solid rgba(224,213,160,0.5);
+            border-radius: 8px; color: #ccc; font-size: 12px;
+            pointer-events: none; display: none; max-width: 240px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
         }
-        #tooltip .tt-name { color: #e0d5a0; font-weight: bold; margin-bottom: 4px; }
-        #tooltip .tt-desc { color: #8a8a6a; font-size: 11px; }
+        #tooltip .tt-name { color: #e0d5a0; font-weight: bold; font-size: 13px; margin-bottom: 6px; letter-spacing: 0.5px; }
+        #tooltip .tt-desc { color: #a0a080; font-size: 11px; line-height: 1.6; }
 
         /* ─── Death Screen ─── */
         #deathScreen {
@@ -2285,6 +2287,7 @@ function updateHUD() {
 function renderInventory() {
     const grid = document.getElementById('invGrid');
     grid.innerHTML = '';
+    const tooltip = document.getElementById('tooltip');
 
     // 24 slots
     for (let i = 0; i < 24; i++) {
@@ -2293,17 +2296,54 @@ function renderInventory() {
 
         if (i < player.inventory.length) {
             const item = player.inventory[i];
+            const isConsumable = item.heal || item.hunger || item.thirst;
+
             slot.innerHTML = `
                 <span>${item.emoji}</span>
                 <span class="item-name">${item.name}</span>
                 ${item.qty > 1 ? `<span class="qty">×${item.qty}</span>` : ''}
             `;
-            slot.title = `${item.name}${item.heal ? ' (Heals '+item.heal+')' : ''}${item.hunger ? ' (Food '+item.hunger+')' : ''}${item.thirst ? ' (Water '+item.thirst+')' : ''}`;
+
+            // Build tooltip description
+            let effects = [];
+            if (item.heal) effects.push(`❤️ +${item.heal} Health`);
+            if (item.hunger) effects.push(`🍖 +${item.hunger} Hunger`);
+            if (item.thirst) effects.push(`💧 +${item.thirst} Thirst`);
+
+            const ttName = item.name;
+            let ttDesc = '';
+            if (effects.length > 0) {
+                ttDesc = effects.join('  ·  ');
+                ttDesc += '\n🖱️ Click to use';
+            } else {
+                ttDesc = 'Crafting material';
+            }
+            ttDesc += `\n×${item.qty} in inventory`;
+
+            // Hover tooltip
+            slot.addEventListener('mouseenter', (e) => {
+                tooltip.querySelector('.tt-name').textContent = ttName;
+                tooltip.querySelector('.tt-desc').innerHTML = ttDesc.replace(/\n/g, '<br>');
+                tooltip.style.display = 'block';
+            });
+            slot.addEventListener('mousemove', (e) => {
+                const tx = Math.min(e.clientX + 12, window.innerWidth - 220);
+                const ty = Math.max(e.clientY - 70, 10);
+                tooltip.style.left = tx + 'px';
+                tooltip.style.top = ty + 'px';
+            });
+            slot.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
 
             // Click to use consumable items
-            if (item.heal || item.hunger || item.thirst) {
+            if (isConsumable) {
                 slot.style.cursor = 'pointer';
-                slot.addEventListener('click', () => useInventoryItem(i));
+                slot.style.borderColor = 'rgba(46,204,113,0.3)';
+                slot.addEventListener('click', () => {
+                    useInventoryItem(i);
+                    tooltip.style.display = 'none';
+                });
             }
         }
 
